@@ -722,7 +722,7 @@ fix_zerotier() {
     local conf_path="$BUILD_DIR/package/base-files/files/etc/zerotier.conf"
     if [ ! -f "$conf_path" ]; then
         echo '{"settings":{"portMappingEnabled":false}}' > "$conf_path"
-    if
+    fi
     #创建文件夹
     local zerotier_path="$BUILD_DIR/package/base-files/files/etc/zerotier"
     if [ ! -d "$zerotier_path" ]; then
