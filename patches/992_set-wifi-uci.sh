@@ -13,11 +13,18 @@ configure_wifi() {
     if [ -n "$now_encryption" ] && [ "$now_encryption" != "none" ]; then
         return 0
     fi
+
+    local mobility_domain="4f56"
+    # 根据 htmode 设置 mobility_domain
+    if [ "$htmode" = "HE80" ] || [ "$htmode" = "HE160" ]; then
+        mobility_domain="4f59"
+    fi
+
     uci -q batch <<EOF
 set wireless.radio${radio}.channel="${channel}"
 set wireless.radio${radio}.htmode="${htmode}"
 set wireless.radio${radio}.mu_beamformer='1'
-set wireless.radio${radio}.country='US'
+set wireless.radio${radio}.country='CN'
 set wireless.radio${radio}.txpower="${txpower}"
 set wireless.radio${radio}.cell_density='0'
 set wireless.radio${radio}.disabled='0'
@@ -25,6 +32,11 @@ set wireless.default_radio${radio}.ssid="${ssid}"
 set wireless.default_radio${radio}.encryption='psk2+ccmp'
 set wireless.default_radio${radio}.key="${key}"
 set wireless.default_radio${radio}.ieee80211k='1'
+set wireless.default_radio${radio}.ieee80211r='1'
+set wireless.default_radio${radio}.mobility_domain="${mobility_domain}"
+set wireless.default_radio${radio}.reassociation_deadline='20000'
+set wireless.default_radio${radio}.ft_over_ds='0'
+set wireless.default_radio${radio}.ft_psk_generate_local='1'
 set wireless.default_radio${radio}.time_advertisement='2'
 set wireless.default_radio${radio}.time_zone='CST-8'
 set wireless.default_radio${radio}.bss_transition='1'
@@ -34,8 +46,8 @@ EOF
 }
 
 jdc_ax1800_pro_wifi_cfg() {
-    configure_wifi 0 149 HE80 20 'JDC_AX1800PRO_5G' '12345678'
-    configure_wifi 1 1 HE20 20 'JDC_AX1800PRO' '12345678'
+    configure_wifi 0 149 HE80 20 'MeshWifi-5G' '12345678'
+    configure_wifi 1 1 HE20 20 'MeshWifi' '12345678'
 }
 
 jdc_ax6600_wifi_cfg() {

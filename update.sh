@@ -24,7 +24,7 @@ FEEDS_CONF="feeds.conf.default"
 GOLANG_REPO="https://github.com/sbwml/packages_lang_golang"
 GOLANG_BRANCH="24.x"
 THEME_SET="argon"
-LAN_ADDR="192.168.1.1"
+LAN_ADDR="192.168.9.1"
 
 clone_repo() {
     if [[ ! -d $BUILD_DIR ]]; then
@@ -87,8 +87,8 @@ update_feeds() {
 remove_unwanted_packages() {
     local luci_packages=(
         "luci-app-passwall" "luci-app-smartdns" "luci-app-ddns-go" "luci-app-rclone"
-        "luci-app-ssr-plus" "luci-app-vssr" "luci-theme-argon" "luci-app-daed" "luci-app-dae"
-        "luci-app-alist" "luci-app-argon-config" "luci-app-homeproxy" "luci-app-haproxy-tcp"
+        "luci-app-ssr-plus" "luci-app-vssr" "luci-app-daed" "luci-app-dae"
+        "luci-app-alist" "luci-app-homeproxy" "luci-app-haproxy-tcp"
         "luci-app-openclash" "luci-app-mihomo" "luci-app-appfilter" "luci-app-msd_lite"
     )
     local packages_net=(
@@ -97,7 +97,6 @@ remove_unwanted_packages() {
         "sing-box" "v2ray-core" "v2ray-geodata" "v2ray-plugin" "tuic-client"
         "chinadns-ng" "ipt2socks" "tcping" "trojan-plus" "simple-obfs"
         "shadowsocksr-libev" "dae" "daed" "mihomo" "geoview" "tailscale" "open-app-filter"
-        "msd_lite"
     )
     local small8_packages=(
         "ppp" "firewall" "dae" "daed" "daed-next" "libnftnl" "nftables" "dnsmasq"
@@ -144,10 +143,10 @@ install_small8() {
         tuic-client chinadns-ng ipt2socks tcping trojan-plus simple-obfs shadowsocksr-libev \
         luci-app-passwall alist luci-app-alist smartdns luci-app-smartdns v2dat mosdns luci-app-mosdns \
         adguardhome luci-app-adguardhome ddns-go luci-app-ddns-go taskd luci-lib-xterm luci-lib-taskd \
-        luci-app-store quickstart luci-app-quickstart luci-app-istorex luci-app-cloudflarespeedtest \
-        luci-theme-argon netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash luci-app-homeproxy \
+        luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
+        netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash luci-app-homeproxy \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        easytier luci-app-easytier msd_lite luci-app-msd_lite
+        luci-app-easytier luci-app-wolplus luci-app-tinyfilemanager luci-app-netspeedtest
 }
 
 install_feeds() {
@@ -171,11 +170,11 @@ fix_default_set() {
         find "$BUILD_DIR/feeds/luci/collections/" -type f -name "Makefile" -exec sed -i "s/luci-theme-bootstrap/luci-theme-$THEME_SET/g" {} \;
     fi
 
-    if [ -d "$BUILD_DIR/feeds/small8/luci-theme-argon" ]; then
-        find "$BUILD_DIR/feeds/small8/luci-theme-argon" -type f -name "cascade*" -exec sed -i 's/--bar-bg/--primary/g' {} \;
-    fi
+    # if [ -d "$BUILD_DIR/feeds/small8/luci-theme-argon" ]; then
+    #     find "$BUILD_DIR/feeds/small8/luci-theme-argon" -type f -name "cascade*" -exec sed -i 's/--bar-bg/--primary/g' {} \;
+    # fi
 
-    install -Dm755 "$BASE_PATH/patches/990_set_argon_primary" "$BUILD_DIR/package/base-files/files/etc/uci-defaults/990_set_argon_primary"
+    # install -Dm755 "$BASE_PATH/patches/990_set_argon_primary" "$BUILD_DIR/package/base-files/files/etc/uci-defaults/990_set_argon_primary"
     install -Dm755 "$BASE_PATH/patches/991_custom_settings" "$BUILD_DIR/package/base-files/files/etc/uci-defaults/991_custom_settings"
 
     if [ -f "$BUILD_DIR/package/emortal/autocore/files/tempinfo" ]; then
@@ -413,11 +412,11 @@ install_opkg_distfeeds() {
 
     if [ -d "$emortal_def_dir" ] && [ ! -f "$distfeeds_conf" ]; then
         cat <<'EOF' >"$distfeeds_conf"
-src/gz openwrt_base https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base/
-src/gz openwrt_luci https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci/
-src/gz openwrt_packages https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages/
-src/gz openwrt_routing https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing/
-src/gz openwrt_telephony https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony/
+src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
+src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
+src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
+src/gz immortalwrt_routing https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing
+src/gz immortalwrt_telephony https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony
 EOF
 
         sed -i "/define Package\/default-settings\/install/a\\
@@ -773,7 +772,7 @@ main() {
     add_backup_info_to_sysupgrade
     optimize_smartDNS
     update_mosdns_deconfig
-    fix_quickstart
+    # fix_quickstart
     update_oaf_deconfig
     add_timecontrol
     add_gecoosac
