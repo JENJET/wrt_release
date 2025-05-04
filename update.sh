@@ -88,8 +88,8 @@ remove_unwanted_packages() {
     local luci_packages=(
         "luci-app-passwall" "luci-app-smartdns" "luci-app-ddns-go" "luci-app-rclone"
         "luci-app-ssr-plus" "luci-app-vssr" "luci-app-daed" "luci-app-dae"
-        "luci-app-alist" "luci-app-homeproxy" "luci-app-haproxy-tcp"
-        "luci-app-openclash" "luci-app-mihomo" "luci-app-appfilter" "luci-app-msd_lite"
+        "luci-app-alist" "luci-app-haproxy-tcp"
+        "luci-app-openclash" "luci-app-mihomo" "luci-app-appfilter"
     )
     local packages_net=(
         "haproxy" "xray-core" "xray-plugin" "dns2socks" "alist" "hysteria"
@@ -144,7 +144,7 @@ install_small8() {
         luci-app-passwall alist luci-app-alist smartdns luci-app-smartdns v2dat mosdns luci-app-mosdns \
         adguardhome luci-app-adguardhome ddns-go luci-app-ddns-go taskd luci-lib-xterm luci-lib-taskd \
         luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
-        netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash luci-app-homeproxy \
+        netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
         luci-app-easytier luci-app-wolplus luci-app-tinyfilemanager luci-app-netspeedtest
 }
@@ -717,6 +717,19 @@ fix_easytier() {
     fi
 }
 
+#修复zerotier无法启动的问题.需要设置zerotier的配置文件为/etc/zerotier.conf
+fix_zerotier() {
+    local conf_path="$BUILD_DIR/package/base-files/files/etc/zerotier.conf"
+    if [ ! -f "$conf_path" ]; then
+        echo '{"settings":{"portMappingEnabled":false}}' > "$conf_path"
+    if
+    #创建文件夹
+    local zerotier_path="$BUILD_DIR/package/base-files/files/etc/zerotier"
+    if [ ! -d "$zerotier_path" ]; then
+        mkdir -p "$zerotier_path"
+    fi
+}
+
 update_geoip() {
     local geodata_path="$BUILD_DIR/package/feeds/small8/v2ray-geodata/Makefile"
     if [ -d "${geodata_path%/*}" ] && [ -f "$geodata_path" ]; then
@@ -743,7 +756,7 @@ main() {
     reset_feeds_conf
     update_feeds
     remove_unwanted_packages
-    update_homeproxy
+    # update_homeproxy
     fix_default_set
     fix_miniupnpd
     update_golang
@@ -780,6 +793,7 @@ main() {
     support_fw4_adg
     update_script_priority
     fix_easytier
+    fix_zerotier
     update_geoip
     update_package "xray-core"
     # update_proxy_app_menu_location

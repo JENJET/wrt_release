@@ -11,6 +11,11 @@ if [ "$current_value" -lt 65535 ]; then
     sysctl -p
 fi
 
+# 删除前缀
+uci del network.globals.ula_prefix
+uci commit network
+# /etc/init.d/network restart
+
 # 解除dropbear访问限制
 if uci show dropbear | grep -q "DirectInterface"; then
     uci delete dropbear.main.DirectInterface
