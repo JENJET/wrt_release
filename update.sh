@@ -409,6 +409,7 @@ update_pw() {
 install_opkg_distfeeds() {
     local emortal_def_dir="$BUILD_DIR/package/emortal/default-settings"
     local distfeeds_conf="$emortal_def_dir/files/99-distfeeds.conf"
+    
     # 强制删除之前的文件,重新使用新的配置文件
     rm -rf "$distfeeds_conf"
 
