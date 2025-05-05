@@ -1,0 +1,23 @@
+msgid "Wake on LAN +"
+msgstr "网络唤醒Plus"
+
+msgid "Wake on LAN is a mechanism to remotely boot computers in the local network."
+msgstr "唤醒你的局域网设备"
+
+msgid "Host Clients"
+msgstr "设备列表"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "MAC Address"
+msgstr "客户端MAC"
+
+msgid "Network Interface"
+msgstr "网络接口"
+
+msgid "Wake Up Host"
+msgstr "唤醒主机"
+
+msgid "Awake"
+msgstr "唤醒"

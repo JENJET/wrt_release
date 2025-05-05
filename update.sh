@@ -146,7 +146,7 @@ install_small8() {
         luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
         netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        luci-app-easytier luci-app-wolplus luci-app-tinyfilemanager luci-app-netspeedtest
+        luci-app-easytier luci-app-wolplus luci-app-netspeedtest
 }
 
 install_feeds() {
@@ -466,7 +466,7 @@ update_nss_diag() {
     fi
 }
 
-update_menu_location() {
+update_menu() {
     local samba4_path="$BUILD_DIR/feeds/luci/applications/luci-app-samba4/root/usr/share/luci/menu.d/luci-app-samba4.json"
     if [ -d "$(dirname "$samba4_path")" ] && [ -f "$samba4_path" ]; then
         sed -i 's/nas/services/g' "$samba4_path"
@@ -475,6 +475,11 @@ update_menu_location() {
     local tailscale_path="$BUILD_DIR/feeds/small8/luci-app-tailscale/root/usr/share/luci/menu.d/luci-app-tailscale.json"
     if [ -d "$(dirname "$tailscale_path")" ] && [ -f "$tailscale_path" ]; then
         sed -i 's/services/vpn/g' "$tailscale_path"
+    fi
+
+    local netspeedtest_path="$BUILD_DIR/feeds/small8/luci-app-netspeedtest/luasrc/controller/netspeedtest.lua"
+    if [ -d "$(dirname "$netspeedtest_path")" ] && [ -f "$netspeedtest_path" ]; then
+        sed -i 's/_("Net Speedtest"),90)/_("Net Speedtest"),50)/g' "$netspeedtest_path"
     fi
 }
 
@@ -544,6 +549,7 @@ function add_backup_info_to_sysupgrade() {
         cat >"$conf_path" <<'EOF'
 /etc/AdGuardHome.yaml
 /etc/easytier
+/etc/zerotier.conf
 /etc/lucky/
 EOF
     fi
@@ -733,6 +739,22 @@ fix_zerotier() {
     fi
 }
 
+fix_wolplus() {
+    local wolplus_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/luasrc/controller/wolplus.lua"
+    if [ -d "$(dirname "$wolplus_path")" ] && [ -f "$wolplus_path" ]; then
+        sed -i 's/_("Wake on LAN"),/_("Wake on LAN +"),/g' "$wolplus_path"  
+    fi
+    local wolplus_po_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/po/zh-Hans/wolplus.po"
+    install -Dm664 "$BASE_PATH/patches/wolplus/wolplus.po" "$wolplus_po_path"
+}
+
+disable_quickstart() {
+    local quickstart_path="$BUILD_DIR/feeds/small8/luci-app-quickstart/postinst"
+     if [ -d "$(dirname "$quickstart_path")" ]; then
+        install -Dm664 "$BASE_PATH/patches/quickstart/postinst" "$quickstart_path"
+    fi
+}
+
 update_geoip() {
     local geodata_path="$BUILD_DIR/package/feeds/small8/v2ray-geodata/Makefile"
     if [ -d "${geodata_path%/*}" ] && [ -f "$geodata_path" ]; then
@@ -782,7 +804,7 @@ main() {
     set_build_signature
     fix_compile_vlmcsd
     update_nss_diag
-    update_menu_location
+    update_menu
     fix_compile_coremark
     update_dnsmasq_conf
     add_backup_info_to_sysupgrade
@@ -797,6 +819,8 @@ main() {
     update_script_priority
     fix_easytier
     fix_zerotier
+    fix_wolplus
+    disable_quickstart
     update_geoip
     update_package "xray-core"
     # update_proxy_app_menu_location

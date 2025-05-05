@@ -1,0 +1,3 @@
+#!/bin/sh
+/etc/init.d/quickstart disable
+/etc/init.d/quickstart stop
