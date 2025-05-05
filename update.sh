@@ -807,7 +807,7 @@ main() {
     update_nss_diag
     update_menu
     fix_compile_coremark
-    update_dnsmasq_conf
+    # update_dnsmasq_conf
     add_backup_info_to_sysupgrade
     optimize_smartDNS
     update_mosdns_deconfig
