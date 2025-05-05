@@ -146,7 +146,7 @@ install_small8() {
         luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
         netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        luci-app-easytier luci-app-wolplus luci-app-netspeedtest
+        luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced
 }
 
 install_feeds() {
@@ -652,7 +652,7 @@ support_fw4_adg() {
     # 验证源路径是否文件存在且是文件，目标路径目录存在且脚本路径合法
     if [ -f "$src_path" ] && [ -d "${dst_path%/*}" ] && [ -f "$dst_path" ]; then
         # 使用 install 命令替代 cp 以确保权限和备份处理
-        install -Dm 755 "$src_path" "$dst_path"
+        install -Dm755 "$src_path" "$dst_path"
         echo "已更新AdGuardHome启动脚本"
     fi
 }
