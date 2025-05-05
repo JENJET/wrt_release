@@ -742,10 +742,11 @@ fix_zerotier() {
 fix_wolplus() {
     local wolplus_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/luasrc/controller/wolplus.lua"
     if [ -d "$(dirname "$wolplus_path")" ] && [ -f "$wolplus_path" ]; then
-        sed -i 's/_("Wake on LAN"),/_("Wake on LAN +"),/g' "$wolplus_path"  
+        sed -i 's/_("Wake on LAN"),/_("Wake on LAN +"),/g' "$wolplus_path"
+        
+        local wolplus_po_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/po/zh_Hans/wolplus.po"
+        install -Dm664 "$BASE_PATH/patches/wolplus/wolplus.po" "$wolplus_po_path"
     fi
-    local wolplus_po_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/po/zh_Hans/wolplus.po"
-    install -Dm664 "$BASE_PATH/patches/wolplus/wolplus.po" "$wolplus_po_path"
 }
 
 disable_quickstart() {
