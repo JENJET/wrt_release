@@ -30,10 +30,6 @@ clone_repo() {
     if [[ ! -d $BUILD_DIR ]]; then
         echo $REPO_URL $REPO_BRANCH
         git clone --depth 1 -b $REPO_BRANCH $REPO_URL $BUILD_DIR
-    else
-        cd $BUILD_DIR
-        git pull --rebase=merges --autostash
-        cd -
     fi
 }
 
@@ -92,7 +88,7 @@ remove_unwanted_packages() {
     local luci_packages=(
         "luci-app-passwall" "luci-app-smartdns" "luci-app-ddns-go" "luci-app-rclone"
         "luci-app-ssr-plus" "luci-app-vssr" "luci-app-daed" "luci-app-dae"
-        "luci-app-alist" "luci-app-haproxy-tcp"
+        "luci-app-alist" "luci-app-haproxy-tcp luci-app-homeproxy"
         "luci-app-openclash" "luci-app-mihomo" "luci-app-appfilter"
     )
     local packages_net=(
@@ -135,14 +131,16 @@ remove_unwanted_packages() {
 }
 
 update_golang() {
-    if [[ -d ./feeds/packages/lang/golang ]]; then
-        cd ./feeds/packages/lang/golang
+    local golang_path="./feeds/packages/lang/golang"
+    if [[ -d "$golang_path" ]]; then
+        echo "cd $golang_path && git reset --hard && git clean -f -d && git pull"
+        cd "$golang_path"
         git reset --hard
         git clean -f -d
         git pull
         cd -
     else
-        git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH ./feeds/packages/lang/golang
+        git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH "$golang_path"
     fi
 }
 
@@ -334,6 +332,7 @@ fix_mkpkg_format_invalid() {
 add_ax6600_led() {
     local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
     if [ -d "$athena_led_dir" ]; then
+        echo "cd $athena_led_dir && git reset --hard && git clean -f -d && git pull"
         cd "$athena_led_dir"
         git reset --hard
         git clean -f -d
@@ -431,7 +430,7 @@ install_opkg_distfeeds() {
 
     if [ ! -f "$distfeeds_conf" ]; then
         mkdir -p "$(dirname "$distfeeds_conf")"
-        cat <<'EOF' >"$distfeeds_conf"
+        cat <<'EOF' > "$distfeeds_conf"
 src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
 src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
 src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
@@ -512,9 +511,10 @@ update_homeproxy() {
     local target_dir="$BUILD_DIR/feeds/small8/luci-app-homeproxy"
 
     if [ -d "$target_dir" ]; then
+        echo "cd $target_dir && git reset --hard && git clean -f -d && git pull"
         cd "$target_dir"
         git reset --hard
-        git -f -d
+        git clean -f -d
         git pull
         cd -
     else
@@ -691,6 +691,7 @@ fix_adguardhome() {
 add_timecontrol() {
     local timecontrol_dir="$BUILD_DIR/feeds/small8/luci-app-timecontrol"
     if [ -d "$timecontrol_dir" ]; then
+        echo "cd $timecontrol_dir && git reset --hard && git clean -f -d && git pull"
         cd "$timecontrol_dir"
         git reset --hard
         git clean -f -d
@@ -707,6 +708,7 @@ add_timecontrol() {
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
     if [ -d "$gecoosac_dir" ]; then
+        echo "cd $gecoosac_dir && git reset --hard && git clean -f -d && git pull"
         cd "$gecoosac_dir"
         git reset --hard
         git clean -f -d
@@ -831,7 +833,7 @@ main() {
     reset_feeds_conf
     update_feeds
     remove_unwanted_packages
-    # update_homeproxy
+    update_homeproxy
     fix_default_set
     fix_miniupnpd
     update_golang
