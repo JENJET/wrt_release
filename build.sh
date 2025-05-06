@@ -37,7 +37,8 @@ if [[ -d $BASE_PATH/action_build ]]; then
     BUILD_DIR="action_build"
 fi
 
-echo "开始编译 当前时间：$(date +'%F %T.%3N')"
+START_TIME=$(date +'%F %T.%3N')
+echo "开始编译 当前时间："$START_TIME""
 
 $BASE_PATH/update.sh "$REPO_URL" "$REPO_BRANCH" "$BASE_PATH/$BUILD_DIR" "$COMMIT_HASH"
 
@@ -75,4 +76,5 @@ if [[ -d $BASE_PATH/action_build ]]; then
     make clean
 fi
 
+echo "开始编译时间："$START_TIME""
 echo "结束编译 当前时间：$(date +'%F %T.%3N')"

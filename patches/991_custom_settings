@@ -11,6 +11,9 @@ if [ "$current_value" -lt 65535 ]; then
     sysctl -p
 fi
 
+# 设置默认语言为中文
+uci set luci.main.lang='zh_cn'
+
 # 删除前缀
 uci del network.globals.ula_prefix
 uci commit network
