@@ -27,7 +27,7 @@ if uci show dropbear | grep -q "DirectInterface"; then
 fi
 
 quickstart="/etc/init.d/quickstart"
-if [ -f "$quickstart" ]; then
+if [ -f "$quickstart" ] && [ "$(uci get quickstart.global.enable 2>/dev/null)" = "0" ] && {
     "$quickstart" disable
     "$quickstart" stop
-fi
+}

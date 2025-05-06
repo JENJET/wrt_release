@@ -30,6 +30,10 @@ clone_repo() {
     if [[ ! -d $BUILD_DIR ]]; then
         echo $REPO_URL $REPO_BRANCH
         git clone --depth 1 -b $REPO_BRANCH $REPO_URL $BUILD_DIR
+    else
+        git reset --hard
+        git clean -f -d
+        git pull
     fi
 }
 
@@ -348,9 +352,11 @@ chanage_cpuusage() {
     local luci_dir="$BUILD_DIR/feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci"
     local imm_script1="$BUILD_DIR/package/base-files/files/sbin/cpuusage"
 
-    if [ -f $luci_dir ]; then
-        sed -i "s#const fd = popen('top -n1 | awk \\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\'')#const cpuUsageCommand = access('/sbin/cpuusage') ? '/sbin/cpuusage' : 'top -n1 | awk \\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\''#g" $luci_dir
-        sed -i '/cpuUsageCommand/a \\t\t\tconst fd = popen(cpuUsageCommand);' $luci_dir
+    if [ -f "$luci_dir" ]; then
+        sed -i "s#const fd = popen('top -n1 | awk \\\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\\'')#const cpuUsageCommand = access('/sbin/cpuusage') ? '/sbin/cpuusage' : 'top -n1 | awk \\\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\\''#g" "$luci_dir"
+        # 先删除再加,否则可能会一直重复加
+        sed -i '/const fd = popen(cpuUsageCommand);/d' "$luci_dir"
+        sed -i '/cpuUsageCommand/a \\t\t\tconst fd = popen(cpuUsageCommand);' "$luci_dir"
     fi
 
     if [ -f "$imm_script1" ]; then
@@ -422,7 +428,8 @@ install_opkg_distfeeds() {
     # 强制删除之前的文件,重新使用新的配置文件
     rm -rf "$distfeeds_conf"
 
-    if [ -d "$emortal_def_dir" ] && [ ! -f "$distfeeds_conf" ]; then
+    if [ ! -f "$distfeeds_conf" ]; then
+        mkdir -p "$(dirname "$distfeeds_conf")"
         cat <<'EOF' >"$distfeeds_conf"
 src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
 src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
@@ -452,7 +459,7 @@ update_nss_pbuf_performance() {
 set_build_signature() {
     local file="$BUILD_DIR/feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js"
     if [ -d "$(dirname "$file")" ] && [ -f $file ]; then
-        sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ build by ZqinKing')/g" "$file"
+        sed -i "s/(\(luciversion || ''\)),/(\1) + (' \/ build by ZqinKing'),/g" "$file"
     fi
 }
 
