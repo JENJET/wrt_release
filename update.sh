@@ -328,7 +328,7 @@ fix_mkpkg_format_invalid() {
 add_ax6600_led() {
     local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
     if [ -d "$athena_led_dir" ]; then
-        git revert --hard
+        git reset --hard
         git clean -f -d
         git pull
     else
