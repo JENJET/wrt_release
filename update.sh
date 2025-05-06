@@ -660,14 +660,22 @@ EOF
     fi
 }
 
-support_fw4_adg() {
-    local src_path="$BASE_PATH/patches/AdGuardHome"
+fix_adguardhome() {
+    # 修复fw4下防火墙问题
+    local src_path="$BASE_PATH/patches/adguardhome/AdGuardHome"
     local dst_path="$BUILD_DIR/package/feeds/small8/luci-app-adguardhome/root/etc/init.d/AdGuardHome"
     # 验证源路径是否文件存在且是文件，目标路径目录存在且脚本路径合法
     if [ -f "$src_path" ] && [ -d "${dst_path%/*}" ] && [ -f "$dst_path" ]; then
         # 使用 install 命令替代 cp 以确保权限和备份处理
         install -Dm755 "$src_path" "$dst_path"
         echo "已更新AdGuardHome启动脚本"
+    fi
+
+    # 修复AdGuardHome gfw2adg.sh 脚本导致的无法启动问题
+    local srcg_fw2dg_path="$BASE_PATH/patches/adguardhome/gfw2adg.sh"
+    local gfw2adg_path = "$BUILD_DIR/package/feeds/small8/luci-app-adguardhome/root/usr/share/AdGuardHome/gfw2adg.sh"
+    if [ -d "${gfw2adg_path%/*}" ] && [ -f "$gfw2adg_path" ]; then
+        install -Dm755 "$srcg_fw2dg_path" "$gfw2adg_path"
     fi
 }
 
@@ -844,7 +852,7 @@ main() {
     add_timecontrol
     add_gecoosac
     install_feeds
-    support_fw4_adg
+    fix_adguardhome
     update_script_priority
     fix_easytier
     fix_zerotier
