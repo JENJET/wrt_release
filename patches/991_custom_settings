@@ -13,6 +13,7 @@ fi
 
 # 设置默认语言为中文
 uci set luci.main.lang='zh_cn'
+uci commit luci
 
 # 删除前缀
 uci del network.globals.ula_prefix
@@ -21,6 +22,7 @@ uci commit network
 
 # 自动挂载未专门配置挂载点的分区
 uci set fstab.cfg013fd6.anon_mount='1'
+uci commit fstab
 
 # 解除dropbear访问限制
 if uci show dropbear | grep -q "DirectInterface"; then
@@ -30,7 +32,7 @@ if uci show dropbear | grep -q "DirectInterface"; then
 fi
 
 quickstart="/etc/init.d/quickstart"
-if [ -f "$quickstart" ] && [ "$(uci get quickstart.global.enable 2>/dev/null)" = "0" ] && {
+if [ -f "$quickstart" ]; then
     "$quickstart" disable
     "$quickstart" stop
-}
+fi

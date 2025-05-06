@@ -582,7 +582,7 @@ function update_script_priority() {
     fi
 
     # 更新mosdns服务的启动顺序
-    local mosdns_path="$BUILD_DIR/package/feeds/small8/luci-app-mosdns/root/etc/init.d/mosdns"
+    local mosdns_path="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/etc/init.d/mosdns"
     if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
         sed -i 's/START=.*/START=94/g' "$mosdns_path"
     fi
@@ -661,7 +661,7 @@ EOF
 fix_adguardhome() {
     # 修复fw4下防火墙问题
     local src_path="$BASE_PATH/patches/adguardhome/AdGuardHome"
-    local dst_path="$BUILD_DIR/package/feeds/small8/luci-app-adguardhome/root/etc/init.d/AdGuardHome"
+    local dst_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/root/etc/init.d/AdGuardHome"
     # 验证源路径是否文件存在且是文件，目标路径目录存在且脚本路径合法
     if [ -f "$src_path" ] && [ -d "${dst_path%/*}" ] && [ -f "$dst_path" ]; then
         # 使用 install 命令替代 cp 以确保权限和备份处理
@@ -671,7 +671,7 @@ fix_adguardhome() {
 
     # 修复AdGuardHome gfw2adg.sh 脚本导致的无法启动问题
     local srcg_fw2dg_path="$BASE_PATH/patches/adguardhome/gfw2adg.sh"
-    local gfw2adg_path="$BUILD_DIR/package/feeds/small8/luci-app-adguardhome/root/usr/share/AdGuardHome/gfw2adg.sh"
+    local gfw2adg_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/root/usr/share/AdGuardHome/gfw2adg.sh"
     if [ -d "${gfw2adg_path%/*}" ] && [ -f "$gfw2adg_path" ]; then
         install -Dm755 "$srcg_fw2dg_path" "$gfw2adg_path"
     fi
@@ -707,7 +707,7 @@ add_gecoosac() {
 
 update_proxy_app_menu_location() {
     # passwall
-    local passwall_path="$BUILD_DIR/package/feeds/small8/luci-app-passwall/luasrc/controller/passwall.lua"
+    local passwall_path="$BUILD_DIR/feeds/small8/luci-app-passwall/luasrc/controller/passwall.lua"
     if [ -d "${passwall_path%/*}" ] && [ -f "$passwall_path" ]; then
         local pos=$(grep -n "entry" "$passwall_path" | head -n 1 | awk -F ":" '{print $1}')
         if [ -n $pos ]; then
@@ -717,13 +717,13 @@ update_proxy_app_menu_location() {
     fi
 
     # homeproxy
-    local homeproxy_path="$BUILD_DIR/package/feeds/small8/luci-app-homeproxy/root/usr/share/luci/menu.d/luci-app-homeproxy.json"
+    local homeproxy_path="$BUILD_DIR/feeds/small8/luci-app-homeproxy/root/usr/share/luci/menu.d/luci-app-homeproxy.json"
     if [ -d "${homeproxy_path%/*}" ] && [ -f "$homeproxy_path" ]; then
         sed -i 's/\/services\//\/proxy\//g' "$homeproxy_path"
     fi
 
     # nikki
-    local nikki_path="$BUILD_DIR/package/feeds/small8/luci-app-nikki/root/usr/share/luci/menu.d/luci-app-nikki.json"
+    local nikki_path="$BUILD_DIR/feeds/small8/luci-app-nikki/root/usr/share/luci/menu.d/luci-app-nikki.json"
     if [ -d "${nikki_path%/*}" ] && [ -f "$nikki_path" ]; then
         sed -i 's/\/services\//\/proxy\//g' "$nikki_path"
     fi
@@ -731,7 +731,7 @@ update_proxy_app_menu_location() {
 
 update_dns_app_menu_location() {
     # smartdns
-    local smartdns_path="$BUILD_DIR/package/feeds/small8/luci-app-smartdns/luasrc/controller/smartdns.lua"
+    local smartdns_path="$BUILD_DIR/feeds/small8/luci-app-smartdns/luasrc/controller/smartdns.lua"
     if [ -d "${smartdns_path%/*}" ] && [ -f "$smartdns_path" ]; then
         local pos=$(grep -n "entry" "$smartdns_path" | head -n 1 | awk -F ":" '{print $1}')
         if [ -n $pos ]; then
@@ -741,20 +741,20 @@ update_dns_app_menu_location() {
     fi
 
     # mosdns
-    local mosdns_path="$BUILD_DIR/package/feeds/small8/luci-app-mosdns/root/usr/share/luci/menu.d/luci-app-mosdns.json"
+    local mosdns_path="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/usr/share/luci/menu.d/luci-app-mosdns.json"
     if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
         sed -i 's/\/services\//\/dns\//g' "$mosdns_path"
     fi
 
     # AdGuardHome
-    local adg_path="$BUILD_DIR/package/feeds/small8/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua"
+    local adg_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua"
     if [ -d "${adg_path%/*}" ] && [ -f "$adg_path" ]; then
         sed -i 's/"services"/"dns"/g' "$adg_path"
     fi
 }
 
 fix_easytier() {
-    local easytier_path="$BUILD_DIR/package/feeds/small8/luci-app-easytier/luasrc/model/cbi/easytier.lua"
+    local easytier_path="$BUILD_DIR/feeds/small8/luci-app-easytier/luasrc/model/cbi/easytier.lua"
     if [ -d "${easytier_path%/*}" ] && [ -f "$easytier_path" ]; then
         sed -i 's/util/xml/g' "$easytier_path"
     fi
@@ -791,7 +791,7 @@ disable_quickstart() {
 }
 
 update_geoip() {
-    local geodata_path="$BUILD_DIR/package/feeds/small8/v2ray-geodata/Makefile"
+    local geodata_path="$BUILD_DIR/feeds/small8/v2ray-geodata/Makefile"
     if [ -d "${geodata_path%/*}" ] && [ -f "$geodata_path" ]; then
         local GEOIP_VER=$(awk -F"=" '/GEOIP_VER:=/ {print $NF}' $geodata_path | grep -oE "[0-9]{1,}")
         if [ -n "$GEOIP_VER" ]; then
