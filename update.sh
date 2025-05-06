@@ -327,12 +327,18 @@ fix_mkpkg_format_invalid() {
 
 add_ax6600_led() {
     local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
+    if [ -d "$athena_led_dir" ]; then
+        git revert --hard
+        git clean -f -d
+        git pull
+    else
+        git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+    fi
+    # # 删除旧的目录（如果存在）
+    # rm -rf "$athena_led_dir" 2>/dev/null
 
-    # 删除旧的目录（如果存在）
-    rm -rf "$athena_led_dir" 2>/dev/null
-
-    # 克隆最新的仓库
-    git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+    # # 克隆最新的仓库
+    # git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
     # 设置执行权限
     chmod +x "$athena_led_dir/root/usr/sbin/athena-led"
     chmod +x "$athena_led_dir/root/etc/init.d/athena_led"
