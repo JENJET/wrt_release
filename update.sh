@@ -31,7 +31,9 @@ clone_repo() {
         echo $REPO_URL $REPO_BRANCH
         git clone --depth 1 -b $REPO_BRANCH $REPO_URL $BUILD_DIR
     else
+        cd $BUILD_DIR
         git pull --rebase=merges --autostash
+        cd -
     fi
 }
 
@@ -134,9 +136,11 @@ remove_unwanted_packages() {
 
 update_golang() {
     if [[ -d ./feeds/packages/lang/golang ]]; then
+        cd ./feeds/packages/lang/golang
         git reset --hard
         git clean -f -d
         git pull
+        cd -
     else
         git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH ./feeds/packages/lang/golang
     fi
@@ -151,7 +155,7 @@ install_small8() {
         luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
         netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced
+        luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced luci-app-homeproxy
 }
 
 install_feeds() {
@@ -330,9 +334,11 @@ fix_mkpkg_format_invalid() {
 add_ax6600_led() {
     local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
     if [ -d "$athena_led_dir" ]; then
+        cd "$athena_led_dir"
         git reset --hard
         git clean -f -d
         git pull
+        cd -
     else
         git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
     fi
@@ -506,7 +512,12 @@ update_homeproxy() {
     local target_dir="$BUILD_DIR/feeds/small8/luci-app-homeproxy"
 
     if [ -d "$target_dir" ]; then
-        rm -rf "$target_dir"
+        cd "$target_dir"
+        git reset --hard
+        git -f -d
+        git pull
+        cd -
+    else
         git clone --depth 1 "$repo_url" "$target_dir"
     fi
 }
@@ -680,9 +691,11 @@ fix_adguardhome() {
 add_timecontrol() {
     local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
     if [ -d "$timecontrol_dir" ]; then
+        cd "$timecontrol_dir"
         git reset --hard
         git clean -f -d
         git pull
+        cd -
     else
         git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
     fi
@@ -694,9 +707,11 @@ add_timecontrol() {
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
     if [ -d "$gecoosac_dir" ]; then
+        cd "$gecoosac_dir"
         git reset --hard
         git clean -f -d
         git pull
+        cd -
     else
         git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
     fi
