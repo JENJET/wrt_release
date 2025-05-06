@@ -38,7 +38,7 @@ if [[ -d $BASE_PATH/action_build ]]; then
 fi
 
 START_TIME=$(date +'%F %T.%3N')
-echo "开始编译 当前时间:"$START_TIME""
+echo "==================开始编译 当前时间:"$START_TIME"=================="
 
 $BASE_PATH/update.sh "$REPO_URL" "$REPO_BRANCH" "$BASE_PATH/$BUILD_DIR" "$COMMIT_HASH"
 
@@ -65,10 +65,10 @@ fi
 
 DOWNLOAD_START_TIME=$(date +'%F %T.%3N')
 make download -j$(($(nproc) * 2))
-echo "开始下载时间:"$DOWNLOAD_START_TIME", 结束下载时间:$(date +'%F %T.%3N')"
+echo "==================开始下载时间:"$DOWNLOAD_START_TIME", 结束下载时间:$(date +'%F %T.%3N')=================="
 MAKE_START_TIME=$(date +'%F %T.%3N')
 make -j$(($(nproc) + 1)) || make -j1 V=s
-echo "开始make时间:"$MAKE_START_TIME", 结束make时间:$(date +'%F %T.%3N')"
+echo "==================开始make时间:"$MAKE_START_TIME", 结束make时间:$(date +'%F %T.%3N')=================="
 
 FIRMWARE_DIR="$BASE_PATH/firmware"
 \rm -rf "$FIRMWARE_DIR"
@@ -80,5 +80,5 @@ if [[ -d $BASE_PATH/action_build ]]; then
     make clean
 fi
 
-echo "开始编译时间:"$START_TIME""
-echo "结束编译 当前时间:$(date +'%F %T.%3N')"
+echo "==================开始编译时间:"$START_TIME"=================="
+echo "==================结束编译 当前时间:$(date +'%F %T.%3N')=================="
