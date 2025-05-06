@@ -152,10 +152,10 @@ install_small8() {
         tuic-client chinadns-ng ipt2socks tcping trojan-plus simple-obfs shadowsocksr-libev \
         luci-app-passwall alist luci-app-alist smartdns luci-app-smartdns v2dat mosdns luci-app-mosdns \
         adguardhome luci-app-adguardhome ddns-go luci-app-ddns-go taskd luci-lib-xterm luci-lib-taskd \
-        luci-app-store luci-app-istorex luci-app-cloudflarespeedtest \
+        luci-app-store luci-app-istorex luci-app-cloudflarespeedtest luci-app-timecontrol \
         netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced luci-app-homeproxy
+        easytier luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced luci-app-homeproxy
 }
 
 install_feeds() {
@@ -689,7 +689,7 @@ fix_adguardhome() {
 }
 
 add_timecontrol() {
-    local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
+    local timecontrol_dir="$BUILD_DIR/feeds/small8/luci-app-timecontrol"
     if [ -d "$timecontrol_dir" ]; then
         cd "$timecontrol_dir"
         git reset --hard
