@@ -37,6 +37,8 @@ if [[ -d $BASE_PATH/action_build ]]; then
     BUILD_DIR="action_build"
 fi
 
+echo "开始编译 当前时间：$(date +'%F %T.%3N')"
+
 $BASE_PATH/update.sh "$REPO_URL" "$REPO_BRANCH" "$BASE_PATH/$BUILD_DIR" "$COMMIT_HASH"
 
 \cp -f "$CONFIG_FILE" "$BASE_PATH/$BUILD_DIR/.config"
@@ -72,3 +74,5 @@ find "$TARGET_DIR" -type f \( -name "*.bin" -o -name "*.manifest" -o -name "*efi
 if [[ -d $BASE_PATH/action_build ]]; then
     make clean
 fi
+
+echo "结束编译 当前时间：$(date +'%F %T.%3N')"

@@ -849,15 +849,15 @@ main() {
     update_oaf_deconfig
     add_timecontrol
     add_gecoosac
-    install_feeds
     fix_adguardhome
-    update_script_priority
     fix_easytier
     fix_zerotier
     fix_wolplus
     disable_quickstart
+    update_script_priority
     update_geoip
     update_package "xray-core"
+    install_feeds    
     # update_proxy_app_menu_location
     # update_dns_app_menu_location
 }
