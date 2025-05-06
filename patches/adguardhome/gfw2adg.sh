@@ -79,7 +79,7 @@ else{
 }END{print("    - '\''[/programaddend/]#'\''")}' > /tmp/adguard.list
 grep programaddstart $configpath
 if [ "$?" == "0" ]; then
-	sed -i '/programaddstart/,/programaddend/c\  - '\''\[\/programaddstart\/\]#'\''' $configpath
+	sed -i '/programaddstart/,/programaddend/c\    - '\''\[\/programaddstart\/\]#'\''' $configpath
 	sed -i '/programaddstart/'r/tmp/adguard.list $configpath
 else
 	sed -i '1i\    - '\''[/programaddstart/]#'\''' /tmp/adguard.list
