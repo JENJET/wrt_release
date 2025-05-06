@@ -670,10 +670,10 @@ fix_adguardhome() {
     fi
 
     # 修复AdGuardHome gfw2adg.sh 脚本导致的无法启动问题
-    local srcg_fw2dg_path="$BASE_PATH/patches/adguardhome/gfw2adg.sh"
+    local src_gfw2dg_path="$BASE_PATH/patches/adguardhome/gfw2adg.sh"
     local gfw2adg_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/root/usr/share/AdGuardHome/gfw2adg.sh"
-    if [ -d "${gfw2adg_path%/*}" ] && [ -f "$gfw2adg_path" ]; then
-        install -Dm755 "$srcg_fw2dg_path" "$gfw2adg_path"
+    if [ -f "$src_gfw2dg_path" ] && [ -d "${gfw2adg_path%/*}" ] && [ -f "$gfw2adg_path" ]; then
+        install -Dm755 "$src_gfw2dg_path" "$gfw2adg_path"
     fi
 }
 
