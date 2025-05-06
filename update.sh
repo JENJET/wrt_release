@@ -31,9 +31,7 @@ clone_repo() {
         echo $REPO_URL $REPO_BRANCH
         git clone --depth 1 -b $REPO_BRANCH $REPO_URL $BUILD_DIR
     else
-        git reset --hard
-        git clean -f -d
-        git pull
+        git pull --rebase=merges --autostash
     fi
 }
 
