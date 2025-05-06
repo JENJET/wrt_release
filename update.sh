@@ -550,6 +550,7 @@ function add_backup_info_to_sysupgrade() {
 /etc/AdGuardHome.yaml
 /etc/easytier
 /etc/zerotier.conf
+/etc/zerotier/
 /etc/lucky/
 EOF
     fi
@@ -659,16 +660,30 @@ support_fw4_adg() {
 
 add_timecontrol() {
     local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
-    # 删除旧的目录（如果存在）
-    rm -rf "$timecontrol_dir" 2>/dev/null
-    git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
+    if [ -d "$timecontrol_dir" ]; then
+        git reset --hard origin/main
+        git clean -f -d
+        git pull
+    else
+        git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
+    fi
+    # # 删除旧的目录（如果存在）
+    # rm -rf "$timecontrol_dir" 2>/dev/null
+    # git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
 }
 
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
-    # 删除旧的目录（如果存在）
-    rm -rf "$gecoosac_dir" 2>/dev/null
-    git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+    if [ -d "$gecoosac_dir" ]; then
+        git reset --hard origin/main
+        git clean -f -d
+        git pull
+    else
+        git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+    fi
+    # # 删除旧的目录（如果存在）
+    # rm -rf "$gecoosac_dir" 2>/dev/null
+    # git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
 }
 
 update_proxy_app_menu_location() {
@@ -799,7 +814,7 @@ main() {
     update_tcping
     add_ax6600_led
     set_custom_task
-    update_pw
+    # update_pw
     install_opkg_distfeeds
     update_nss_pbuf_performance
     set_build_signature
@@ -809,8 +824,8 @@ main() {
     fix_compile_coremark
     # update_dnsmasq_conf
     add_backup_info_to_sysupgrade
-    optimize_smartDNS
-    update_mosdns_deconfig
+    # optimize_smartDNS
+    # update_mosdns_deconfig
     # fix_quickstart
     update_oaf_deconfig
     add_timecontrol
