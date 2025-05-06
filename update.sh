@@ -81,7 +81,7 @@ update_feeds() {
 
     # 更新 feeds
     # ./scripts/feeds clean
-    ./scripts/feeds update -af   #强制更新
+    ./scripts/feeds update -as   #保留本地修改
 }
 
 remove_unwanted_packages() {
@@ -661,7 +661,7 @@ support_fw4_adg() {
 add_timecontrol() {
     local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
     if [ -d "$timecontrol_dir" ]; then
-        git reset --hard origin/main
+        git reset --hard
         git clean -f -d
         git pull
     else
@@ -675,7 +675,7 @@ add_timecontrol() {
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
     if [ -d "$gecoosac_dir" ]; then
-        git reset --hard origin/main
+        git reset --hard
         git clean -f -d
         git pull
     else
