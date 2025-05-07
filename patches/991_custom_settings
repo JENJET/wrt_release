@@ -20,9 +20,9 @@ uci del network.globals.ula_prefix
 uci commit network
 /etc/init.d/network restart
 
-# 自动挂载未专门配置挂载点的分区
-uci set fstab.cfg013fd6.anon_mount='1'
-uci commit fstab
+# # 自动挂载未专门配置挂载点的分区
+# uci set fstab.cfg013fd6.anon_mount='1'
+# uci commit fstab
 
 # 解除dropbear访问限制
 if uci show dropbear | grep -q "DirectInterface"; then
