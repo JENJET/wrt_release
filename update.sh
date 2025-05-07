@@ -49,6 +49,8 @@ clean_up() {
 }
 
 reset_feeds_conf() {
+    local curDir=$(pwd)
+    echo "---curDir is $curDir"
     git reset --hard origin/$REPO_BRANCH
     git clean -f -d
     git pull
@@ -133,15 +135,9 @@ remove_unwanted_packages() {
 update_golang() {
     local golang_path="./feeds/packages/lang/golang"
     if [[ -d "$golang_path" ]]; then
-        echo "cd $golang_path && git reset --hard && git clean -f -d && git pull"
-        cd "$golang_path"
-        git reset --hard
-        git clean -f -d
-        git pull
-        cd -
-    else
-        git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH "$golang_path"
+        \rm -rf "$golang_path"
     fi
+    git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH "$golang_path"
 }
 
 install_small8() {
@@ -151,9 +147,9 @@ install_small8() {
         luci-app-passwall alist luci-app-alist smartdns luci-app-smartdns v2dat mosdns luci-app-mosdns \
         adguardhome luci-app-adguardhome ddns-go luci-app-ddns-go taskd luci-lib-xterm luci-lib-taskd \
         luci-app-store luci-app-istorex luci-app-cloudflarespeedtest luci-app-timecontrol \
-        netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash \
+        netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash luci-app-homeproxy \
         luci-app-amlogic nikki luci-app-nikki tailscale luci-app-tailscale oaf open-app-filter luci-app-oaf \
-        easytier luci-app-easytier luci-app-wolplus luci-app-netspeedtest luci-app-advanced luci-app-homeproxy
+        easytier luci-app-easytier luci-app-wolplus luci-app-netspeedtest
 }
 
 install_feeds() {
@@ -331,21 +327,10 @@ fix_mkpkg_format_invalid() {
 
 add_ax6600_led() {
     local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
-    if [ -d "$athena_led_dir" ]; then
-        echo "cd $athena_led_dir && git reset --hard && git clean -f -d && git pull"
-        cd "$athena_led_dir"
-        git reset --hard
-        git clean -f -d
-        git pull
-        cd -
-    else
-        git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
-    fi
-    # # 删除旧的目录（如果存在）
-    # rm -rf "$athena_led_dir" 2>/dev/null
-
-    # # 克隆最新的仓库
-    # git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+    # 删除旧的目录（如果存在）
+    rm -rf "$athena_led_dir" 2>/dev/null
+    # 克隆最新的仓库
+    git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
     # 设置执行权限
     chmod +x "$athena_led_dir/root/usr/sbin/athena-led"
     chmod +x "$athena_led_dir/root/etc/init.d/athena_led"
@@ -509,17 +494,9 @@ fix_compile_coremark() {
 update_homeproxy() {
     local repo_url="https://github.com/immortalwrt/homeproxy.git"
     local target_dir="$BUILD_DIR/feeds/small8/luci-app-homeproxy"
-
-    if [ -d "$target_dir" ]; then
-        echo "cd $target_dir && git reset --hard && git clean -f -d && git pull"
-        cd "$target_dir"
-        git reset --hard
-        git clean -f -d
-        git pull
-        cd -
-    else
-        git clone --depth 1 "$repo_url" "$target_dir"
-    fi
+    # 删除旧的目录（如果存在）
+    rm -rf "$target_dir" 2>/dev/null
+    git clone --depth 1 "$repo_url" "$target_dir"
 }
 
 update_dnsmasq_conf() {
@@ -689,37 +666,17 @@ fix_adguardhome() {
 }
 
 add_timecontrol() {
-    local timecontrol_dir="$BUILD_DIR/feeds/small8/luci-app-timecontrol"
-    if [ -d "$timecontrol_dir" ]; then
-        echo "cd $timecontrol_dir && git reset --hard && git clean -f -d && git pull"
-        cd "$timecontrol_dir"
-        git reset --hard
-        git clean -f -d
-        git pull
-        cd -
-    else
-        git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
-    fi
-    # # 删除旧的目录（如果存在）
-    # rm -rf "$timecontrol_dir" 2>/dev/null
-    # git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
+    local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
+    # 删除旧的目录（如果存在）
+    rm -rf "$timecontrol_dir" 2>/dev/null
+    git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
 }
 
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
-    if [ -d "$gecoosac_dir" ]; then
-        echo "cd $gecoosac_dir && git reset --hard && git clean -f -d && git pull"
-        cd "$gecoosac_dir"
-        git reset --hard
-        git clean -f -d
-        git pull
-        cd -
-    else
-        git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
-    fi
-    # # 删除旧的目录（如果存在）
-    # rm -rf "$gecoosac_dir" 2>/dev/null
-    # git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+    # 删除旧的目录（如果存在）
+    rm -rf "$gecoosac_dir" 2>/dev/null
+    git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
 }
 
 update_proxy_app_menu_location() {
@@ -848,7 +805,7 @@ main() {
     # fix_mkpkg_format_invalid
     chanage_cpuusage
     update_tcping
-    add_ax6600_led
+    # add_ax6600_led
     set_custom_task
     # update_pw
     install_opkg_distfeeds
@@ -862,7 +819,7 @@ main() {
     add_backup_info_to_sysupgrade
     # optimize_smartDNS
     # update_mosdns_deconfig
-    # fix_quickstart
+    fix_quickstart
     update_oaf_deconfig
     add_timecontrol
     add_gecoosac
