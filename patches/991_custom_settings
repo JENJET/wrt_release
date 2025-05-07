@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# 设置默认语言为中文
+uci set luci.main.lang='zh_cn'
+uci commit luci
+
 # 检查当前nf_conntrack_max值是否小于65536，若更小则修改
 current_value=$(sysctl -n net.netfilter.nf_conntrack_max)
 if [ "$current_value" -lt 65535 ]; then
@@ -11,14 +15,9 @@ if [ "$current_value" -lt 65535 ]; then
     sysctl -p
 fi
 
-# 设置默认语言为中文
-uci set luci.main.lang='zh_cn'
-uci commit luci
-
 # 删除前缀
 uci del network.globals.ula_prefix
 uci commit network
-/etc/init.d/network restart
 
 # # 自动挂载未专门配置挂载点的分区
 # uci set fstab.cfg013fd6.anon_mount='1'
@@ -31,8 +30,42 @@ if uci show dropbear | grep -q "DirectInterface"; then
     /etc/init.d/dropbear restart
 fi
 
+# 停用quickstart
 quickstart="/etc/init.d/quickstart"
 if [ -f "$quickstart" ]; then
     "$quickstart" disable
     "$quickstart" stop
+fi
+
+# 如果沒有 /etc/easytier/et_machine_id 则生成一个,防止使用web方式时提示, Failed to create network, error: {“message”:”Token mismatch”}
+local et_machine_id_path="/etc/easytier/et_machine_id"
+if [ ! -f "$et_machine_id_path" ] || [ ! -s "$et_machine_id_path" ]; then
+    mkdir -p "$(dirname "$et_machine_id_path")"
+    
+    mac_address=""
+    # 扩展接口列表（兼容VLAN和无线设备）
+    for iface in br-lan lan1 eth0 eth1 eth0.1 eth0.2 wan wlan0 wlan1; do
+        if [ -f "/sys/class/net/$iface/address" ]; then
+            mac_address=$(cat "/sys/class/net/$iface/address" | tr -d ':' 2>/dev/null)
+            if [ -n "$mac_address" ]; then
+                break
+            fi
+        fi
+    done
+
+    # MAC地址回退生成逻辑
+    if [ -z "$mac_address" ]; then
+        echo "Warning: No valid MAC found. Generating fallback UDID." >&2
+        # 兼容OpenSSL和纯Shell环境
+        if command -v openssl >/dev/null 2>&1; then
+            mac_address=$(openssl rand -hex 16 | cut -c1-32)
+        else
+            mac_address=$(head -c 32 /dev/urandom | md5sum | tr -dc 'a-f0-9' | cut -c1-32)
+        fi
+    fi
+
+    # 生成UDID并写入文件
+    udid=$(echo -n "$mac_address" | md5sum | awk '{print $1}')
+    echo "$udid" > "$et_machine_id_path"
+    chmod 644 "$et_machine_id_path"
 fi

@@ -36,7 +36,7 @@ clone_repo() {
 clean_up() {
     cd "$BUILD_DIR"
     if [[ -f "$BUILD_DIR"/.config ]]; then
-        \rm -f "$BUILD_DIR"/.config
+        \rm -rf "$BUILD_DIR"/.config
     fi
     if [[ -d "$BUILD_DIR"/tmp ]]; then
         \rm -rf "$BUILD_DIR"/tmp
@@ -266,7 +266,7 @@ remove_something_nss_kmod() {
         sed -i '/kmod-qca-nss-macsec/d' "$ipq_mk_path"
 
         # sed -i 's/automount //g' "$ipq_mk_path"
-        sed -i 's/cpufreq //g' "$ipq_mk_path"
+        # sed -i 's/cpufreq //g' "$ipq_mk_path"
     fi
 }
 
@@ -428,7 +428,7 @@ EOF
 \t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "$emortal_def_dir"/Makefile
 
         sed -i "/exit 0/i\\
-[ -f \'/etc/99-distfeeds.conf\' ] && mv -f \'/etc/99-distfeeds.conf\' \'/etc/opkg/distfeeds.conf\'\n\
+if [ -f \'/etc/99-distfeeds.conf\' ]; then\n\tmv -f \'/etc/99-distfeeds.conf\' \'/etc/opkg/distfeeds.conf\'\nfi\n\
 sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "$emortal_def_dir"/files/99-default-settings
     fi
 }
@@ -647,15 +647,15 @@ EOF
 }
 
 fix_adguardhome() {
-    # 修复fw4下防火墙问题
-    local src_path="$BASE_PATH/patches/adguardhome/AdGuardHome"
-    local dst_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/root/etc/init.d/AdGuardHome"
-    # 验证源路径是否文件存在且是文件，目标路径目录存在且脚本路径合法
-    if [ -f "$src_path" ] && [ -d "${dst_path%/*}" ] && [ -f "$dst_path" ]; then
-        # 使用 install 命令替代 cp 以确保权限和备份处理
-        install -Dm755 "$src_path" "$dst_path"
-        echo "已更新AdGuardHome启动脚本"
-    fi
+    # # 修复fw4下防火墙问题
+    # local src_path="$BASE_PATH/patches/adguardhome/AdGuardHome"
+    # local dst_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/root/etc/init.d/AdGuardHome"
+    # # 验证源路径是否文件存在且是文件，目标路径目录存在且脚本路径合法
+    # if [ -f "$src_path" ] && [ -d "${dst_path%/*}" ] && [ -f "$dst_path" ]; then
+    #     # 使用 install 命令替代 cp 以确保权限和备份处理
+    #     install -Dm755 "$src_path" "$dst_path"
+    #     echo "已更新AdGuardHome启动脚本"
+    # fi
 
     # 修复AdGuardHome gfw2adg.sh 脚本导致的无法启动问题
     local src_gfw2dg_path="$BASE_PATH/patches/adguardhome/gfw2adg.sh"
