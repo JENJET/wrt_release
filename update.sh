@@ -13,7 +13,7 @@ error_handler() {
 trap 'error_handler' ERR
 
 source /etc/profile
-BASE_PATH=$(cd $(dirname $0) && pwd)
+BASE_PATH=$(cd $(dirname "$0") && pwd)
 
 REPO_URL=$1
 REPO_BRANCH=$2
@@ -27,35 +27,35 @@ THEME_SET="argon"
 LAN_ADDR="192.168.9.1"
 
 clone_repo() {
-    if [[ ! -d $BUILD_DIR ]]; then
-        echo $REPO_URL $REPO_BRANCH
-        git clone --depth 1 -b $REPO_BRANCH $REPO_URL $BUILD_DIR
+    if [[ ! -d "$BUILD_DIR" ]]; then
+        echo "$REPO_URL" "$REPO_BRANCH"
+        git clone --depth 1 -b "$REPO_BRANCH" "$REPO_URL" "$BUILD_DIR"
     fi
 }
 
 clean_up() {
-    cd $BUILD_DIR
-    if [[ -f $BUILD_DIR/.config ]]; then
-        \rm -f $BUILD_DIR/.config
+    cd "$BUILD_DIR"
+    if [[ -f "$BUILD_DIR"/.config ]]; then
+        \rm -f "$BUILD_DIR"/.config
     fi
-    if [[ -d $BUILD_DIR/tmp ]]; then
-        \rm -rf $BUILD_DIR/tmp
+    if [[ -d "$BUILD_DIR"/tmp ]]; then
+        \rm -rf "$BUILD_DIR"/tmp
     fi
-    if [[ -d $BUILD_DIR/logs ]]; then
-        \rm -rf $BUILD_DIR/logs/*
+    if [[ -d "$BUILD_DIR"/logs ]]; then
+        \rm -rf "$BUILD_DIR"/logs/*
     fi
-    mkdir -p $BUILD_DIR/tmp
-    echo "1" >$BUILD_DIR/tmp/.build
+    mkdir -p "$BUILD_DIR"/tmp
+    echo "1" >"$BUILD_DIR"/tmp/.build
 }
 
 reset_feeds_conf() {
     local curDir=$(pwd)
-    echo "---curDir is $curDir"
+    echo "---curDir is "$curDir""
     git reset --hard origin/$REPO_BRANCH
     git clean -f -d
     git pull
-    if [[ $COMMIT_HASH != "none" ]]; then
-        git checkout $COMMIT_HASH
+    if [[ "$COMMIT_HASH" != "none" ]]; then
+        git checkout "$COMMIT_HASH"
     fi
 }
 
@@ -137,7 +137,7 @@ update_golang() {
     if [[ -d "$golang_path" ]]; then
         \rm -rf "$golang_path"
     fi
-    git clone --depth 1 $GOLANG_REPO -b $GOLANG_BRANCH "$golang_path"
+    git clone --depth 1 "$GOLANG_REPO" -b "$GOLANG_BRANCH" "$golang_path"
 }
 
 install_small8() {
@@ -154,7 +154,7 @@ install_small8() {
 
 install_feeds() {
     ./scripts/feeds update -i
-    for dir in $BUILD_DIR/feeds/*; do
+    for dir in "$BUILD_DIR"/feeds/*; do
         # 检查是否为目录并且不以 .tmp 结尾，并且不是软链接
         if [ -d "$dir" ] && [[ ! "$dir" == *.tmp ]] && [ ! -L "$dir" ]; then
             if [[ $(basename "$dir") == "small8" ]]; then
@@ -197,24 +197,24 @@ fix_miniupnpd() {
 }
 
 change_dnsmasq2full() {
-    if ! grep -q "dnsmasq-full" $BUILD_DIR/include/target.mk; then
+    if ! grep -q "dnsmasq-full" "$BUILD_DIR"/include/target.mk; then
         sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk
     fi
 }
 
 install_fullconenat() {
-    if [ ! -d $BUILD_DIR/package/network/utils/fullconenat-nft ]; then
+    if [ ! -d "$BUILD_DIR"/package/network/utils/fullconenat-nft ]; then
         ./scripts/feeds install -p small8 -f fullconenat-nft
     fi
-    if [ ! -d $BUILD_DIR/package/network/utils/fullconenat ]; then
+    if [ ! -d "$BUILD_DIR"/package/network/utils/fullconenat ]; then
         ./scripts/feeds install -p small8 -f fullconenat
     fi
 }
 
 fix_mk_def_depends() {
-    sed -i 's/libustream-mbedtls/libustream-openssl/g' $BUILD_DIR/include/target.mk 2>/dev/null
-    if [ -f $BUILD_DIR/target/linux/qualcommax/Makefile ]; then
-        sed -i 's/wpad-basic-mbedtls/wpad-openssl/g' $BUILD_DIR/target/linux/qualcommax/Makefile
+    sed -i 's/libustream-mbedtls/libustream-openssl/g' "$BUILD_DIR"/include/target.mk 2>/dev/null
+    if [ -f "$BUILD_DIR"/target/linux/qualcommax/Makefile ]; then
+        sed -i 's/wpad-basic-mbedtls/wpad-openssl/g' "$BUILD_DIR"/target/linux/qualcommax/Makefile
     fi
 }
 
@@ -231,42 +231,42 @@ add_wifi_default_set() {
 
 update_default_lan_addr() {
     local CFG_PATH="$BUILD_DIR/package/base-files/files/bin/config_generate"
-    if [ -f $CFG_PATH ]; then
-        sed -i 's/192\.168\.[0-9]*\.[0-9]*/'$LAN_ADDR'/g' $CFG_PATH
+    if [ -f "$CFG_PATH" ]; then
+        sed -i 's/192\.168\.[0-9]*\.[0-9]*/'$LAN_ADDR'/g' "$CFG_PATH"
     fi
 }
 
 remove_something_nss_kmod() {
     local ipq_target_path="$BUILD_DIR/target/linux/qualcommax/ipq60xx/target.mk"
     local ipq_mk_path="$BUILD_DIR/target/linux/qualcommax/Makefile"
-    if [ -f $ipq_target_path ]; then
-        sed -i 's/kmod-qca-nss-drv-eogremgr//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-gre//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-map-t//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-match//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-mirror//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-pvxlanmgr//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-tun6rd//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-tunipip6//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-drv-vxlanmgr//g' $ipq_target_path
-        sed -i 's/kmod-qca-nss-macsec//g' $ipq_target_path
+    if [ -f "$ipq_target_path" ]; then
+        sed -i 's/kmod-qca-nss-drv-eogremgr//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-gre//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-map-t//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-match//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-mirror//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-pvxlanmgr//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-tun6rd//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-tunipip6//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-drv-vxlanmgr//g' "$ipq_target_path"
+        sed -i 's/kmod-qca-nss-macsec//g' "$ipq_target_path"
     fi
 
-    if [ -f $ipq_mk_path ]; then
-        sed -i 's/kmod-qca-nss-crypto //g' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-eogremgr/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-gre/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-map-t/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-match/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-mirror/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-tun6rd/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-tunipip6/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-vxlanmgr/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-drv-wifi-meshmgr/d' $ipq_mk_path
-        sed -i '/kmod-qca-nss-macsec/d' $ipq_mk_path
+    if [ -f "$ipq_mk_path" ]; then
+        sed -i 's/kmod-qca-nss-crypto //g' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-eogremgr/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-gre/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-map-t/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-match/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-mirror/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-tun6rd/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-tunipip6/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-vxlanmgr/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-drv-wifi-meshmgr/d' "$ipq_mk_path"
+        sed -i '/kmod-qca-nss-macsec/d' "$ipq_mk_path"
 
-        sed -i 's/automount //g' $ipq_mk_path
-        sed -i 's/cpufreq //g' $ipq_mk_path
+        sed -i 's/automount //g' "$ipq_mk_path"
+        sed -i 's/cpufreq //g' "$ipq_mk_path"
     fi
 }
 
@@ -304,23 +304,23 @@ update_ath11k_fw() {
 }
 
 fix_mkpkg_format_invalid() {
-    if [[ $BUILD_DIR =~ "imm-nss" ]]; then
-        if [ -f $BUILD_DIR/feeds/small8/v2ray-geodata/Makefile ]; then
-            sed -i 's/VER)-\$(PKG_RELEASE)/VER)-r\$(PKG_RELEASE)/g' $BUILD_DIR/feeds/small8/v2ray-geodata/Makefile
+    if [[ "$BUILD_DIR" =~ "imm-nss" ]]; then
+        if [ -f "$BUILD_DIR"/feeds/small8/v2ray-geodata/Makefile ]; then
+            sed -i 's/VER)-\$(PKG_RELEASE)/VER)-r\$(PKG_RELEASE)/g' "$BUILD_DIR"/feeds/small8/v2ray-geodata/Makefile
         fi
-        if [ -f $BUILD_DIR/feeds/small8/luci-lib-taskd/Makefile ]; then
-            sed -i 's/>=1\.0\.3-1/>=1\.0\.3-r1/g' $BUILD_DIR/feeds/small8/luci-lib-taskd/Makefile
+        if [ -f "$BUILD_DIR"/feeds/small8/luci-lib-taskd/Makefile ]; then
+            sed -i 's/>=1\.0\.3-1/>=1\.0\.3-r1/g' "$BUILD_DIR"/feeds/small8/luci-lib-taskd/Makefile
         fi
-        if [ -f $BUILD_DIR/feeds/small8/luci-app-openclash/Makefile ]; then
-            sed -i 's/PKG_RELEASE:=beta/PKG_RELEASE:=1/g' $BUILD_DIR/feeds/small8/luci-app-openclash/Makefile
+        if [ -f "$BUILD_DIR"/feeds/small8/luci-app-openclash/Makefile ]; then
+            sed -i 's/PKG_RELEASE:=beta/PKG_RELEASE:=1/g' "$BUILD_DIR"/feeds/small8/luci-app-openclash/Makefile
         fi
-        if [ -f $BUILD_DIR/feeds/small8/luci-app-quickstart/Makefile ]; then
-            sed -i 's/PKG_VERSION:=0\.8\.16-1/PKG_VERSION:=0\.8\.16/g' $BUILD_DIR/feeds/small8/luci-app-quickstart/Makefile
-            sed -i 's/PKG_RELEASE:=$/PKG_RELEASE:=1/g' $BUILD_DIR/feeds/small8/luci-app-quickstart/Makefile
+        if [ -f "$BUILD_DIR"/feeds/small8/luci-app-quickstart/Makefile ]; then
+            sed -i 's/PKG_VERSION:=0\.8\.16-1/PKG_VERSION:=0\.8\.16/g' "$BUILD_DIR"/feeds/small8/luci-app-quickstart/Makefile
+            sed -i 's/PKG_RELEASE:=$/PKG_RELEASE:=1/g' "$BUILD_DIR"/feeds/small8/luci-app-quickstart/Makefile
         fi
-        if [ -f $BUILD_DIR/feeds/small8/luci-app-store/Makefile ]; then
-            sed -i 's/PKG_VERSION:=0\.1\.27-1/PKG_VERSION:=0\.1\.27/g' $BUILD_DIR/feeds/small8/luci-app-store/Makefile
-            sed -i 's/PKG_RELEASE:=$/PKG_RELEASE:=1/g' $BUILD_DIR/feeds/small8/luci-app-store/Makefile
+        if [ -f "$BUILD_DIR"/feeds/small8/luci-app-store/Makefile ]; then
+            sed -i 's/PKG_VERSION:=0\.1\.27-1/PKG_VERSION:=0\.1\.27/g' "$BUILD_DIR"/feeds/small8/luci-app-store/Makefile
+            sed -i 's/PKG_RELEASE:=$/PKG_RELEASE:=1/g' "$BUILD_DIR"/feeds/small8/luci-app-store/Makefile
         fi
     fi
 }
@@ -425,25 +425,25 @@ EOF
 
         sed -i "/define Package\/default-settings\/install/a\\
 \\t\$(INSTALL_DIR) \$(1)/etc\\n\
-\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" $emortal_def_dir/Makefile
+\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "$emortal_def_dir"/Makefile
 
         sed -i "/exit 0/i\\
 [ -f \'/etc/99-distfeeds.conf\' ] && mv -f \'/etc/99-distfeeds.conf\' \'/etc/opkg/distfeeds.conf\'\n\
-sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" $emortal_def_dir/files/99-default-settings
+sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "$emortal_def_dir"/files/99-default-settings
     fi
 }
 
 update_nss_pbuf_performance() {
     local pbuf_path="$BUILD_DIR/package/kernel/mac80211/files/pbuf.uci"
-    if [ -d "$(dirname "$pbuf_path")" ] && [ -f $pbuf_path ]; then
-        sed -i "s/auto_scale '1'/auto_scale 'off'/g" $pbuf_path
-        sed -i "s/scaling_governor 'performance'/scaling_governor 'schedutil'/g" $pbuf_path
+    if [ -d "$(dirname "$pbuf_path")" ] && [ -f "$pbuf_path" ]; then
+        sed -i "s/auto_scale '1'/auto_scale 'off'/g" "$pbuf_path"
+        sed -i "s/scaling_governor 'performance'/scaling_governor 'schedutil'/g" "$pbuf_path"
     fi
 }
 
 set_build_signature() {
     local file="$BUILD_DIR/feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js"
-    if [ -d "$(dirname "$file")" ] && [ -f $file ]; then
+    if [ -d "$(dirname "$file")" ] && [ -f "$file" ]; then
         sed -i "s/(\(luciversion || ''\)),/(\1) + (' \/ build by ZqinKing'),/g" "$file"
     fi
 }
@@ -508,23 +508,23 @@ update_dnsmasq_conf() {
 
 # 更新版本
 update_package() {
-    local dir=$(find "$BUILD_DIR/package" \( -type d -o -type l \) -name $1)
-    if [ -z $dir ]; then
+    local dir=$(find "$BUILD_DIR/package" \( -type d -o -type l \) -name "$1")
+    if [ -z "$dir" ]; then
         return 0
     fi
     local mk_path="$dir/Makefile"
     if [ -f "$mk_path" ]; then
         # 提取repo
-        local PKG_REPO=$(grep -oE "^PKG_SOURCE_URL.*github.com(/[-_a-zA-Z0-9]{1,}){2}" $mk_path | awk -F"/" '{print $(NF - 1) "/" $NF}')
-        if [ -z $PKG_REPO ]; then
+        local PKG_REPO=$(grep -oE "^PKG_SOURCE_URL.*github.com(/[-_a-zA-Z0-9]{1,}){2}" "$mk_path" | awk -F"/" '{print $(NF - 1) "/" $NF}')
+        if [ -z "$PKG_REPO" ]; then
             return 0
         fi
         local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/releases" | jq -r '.[0].tag_name')
-        PKG_VER=$(echo $PKG_VER | grep -oE "[\.0-9]{1,}")
+        PKG_VER=$(echo "$PKG_VER" | grep -oE "[\.0-9]{1,}")
 
-        local PKG_NAME=$(awk -F"=" '/PKG_NAME:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
-        local PKG_SOURCE=$(awk -F"=" '/PKG_SOURCE:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
-        local PKG_SOURCE_URL=$(awk -F"=" '/PKG_SOURCE_URL:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
+        local PKG_NAME=$(awk -F"=" '/PKG_NAME:=/ {print $NF}' "$mk_path" | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
+        local PKG_SOURCE=$(awk -F"=" '/PKG_SOURCE:=/ {print $NF}' "$mk_path" | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
+        local PKG_SOURCE_URL=$(awk -F"=" '/PKG_SOURCE_URL:=/ {print $NF}' "$mk_path" | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
 
         PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_NAME\)/$PKG_NAME}
         PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_VERSION\)/$PKG_VER}
@@ -533,10 +533,10 @@ update_package() {
 
         local PKG_HASH=$(curl -sL "$PKG_SOURCE_URL""$PKG_SOURCE" | sha256sum | cut -b -64)
 
-        sed -i 's/^PKG_VERSION:=.*/PKG_VERSION:='$PKG_VER'/g' $mk_path
-        sed -i 's/^PKG_HASH:=.*/PKG_HASH:='$PKG_HASH'/g' $mk_path
+        sed -i 's/^PKG_VERSION:=.*/PKG_VERSION:='$PKG_VER'/g' "$mk_path"
+        sed -i 's/^PKG_HASH:=.*/PKG_HASH:='$PKG_HASH'/g' "$mk_path"
 
-        echo "Update Package $1 to $PKG_VER $PKG_HASH"
+        echo "Update Package "$1" to "$PKG_VER" "$PKG_HASH""
     fi
 }
 
@@ -684,7 +684,7 @@ update_proxy_app_menu_location() {
     local passwall_path="$BUILD_DIR/feeds/small8/luci-app-passwall/luasrc/controller/passwall.lua"
     if [ -d "${passwall_path%/*}" ] && [ -f "$passwall_path" ]; then
         local pos=$(grep -n "entry" "$passwall_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n $pos ]; then
+        if [ -n "$pos" ]; then
             sed -i ''${pos}'i\	entry({"admin", "proxy"}, firstchild(), "Proxy", 30).dependent = false' "$passwall_path"
             sed -i 's/"services"/"proxy"/g' "$passwall_path"
         fi
@@ -708,7 +708,7 @@ update_dns_app_menu_location() {
     local smartdns_path="$BUILD_DIR/feeds/small8/luci-app-smartdns/luasrc/controller/smartdns.lua"
     if [ -d "${smartdns_path%/*}" ] && [ -f "$smartdns_path" ]; then
         local pos=$(grep -n "entry" "$smartdns_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n $pos ]; then
+        if [ -n "$pos" ]; then
             sed -i ''${pos}'i\	entry({"admin", "dns"}, firstchild(), "DNS", 29).dependent = false' "$smartdns_path"
             sed -i 's/"services"/"dns"/g' "$smartdns_path"
         fi
@@ -767,7 +767,7 @@ disable_quickstart() {
 update_geoip() {
     local geodata_path="$BUILD_DIR/feeds/small8/v2ray-geodata/Makefile"
     if [ -d "${geodata_path%/*}" ] && [ -f "$geodata_path" ]; then
-        local GEOIP_VER=$(awk -F"=" '/GEOIP_VER:=/ {print $NF}' $geodata_path | grep -oE "[0-9]{1,}")
+        local GEOIP_VER=$(awk -F"=" '/GEOIP_VER:=/ {print $NF}' "$geodata_path" | grep -oE "[0-9]{1,}")
         if [ -n "$GEOIP_VER" ]; then
             local base_url="https://github.com/v2fly/geoip/releases/download/${GEOIP_VER}"
             # 下载旧的geoip.dat和新的geoip-only-cn-private.dat文件的校验和

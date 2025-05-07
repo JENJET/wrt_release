@@ -18,7 +18,7 @@ uci commit luci
 # 删除前缀
 uci del network.globals.ula_prefix
 uci commit network
-# /etc/init.d/network restart
+/etc/init.d/network restart
 
 # 自动挂载未专门配置挂载点的分区
 uci set fstab.cfg013fd6.anon_mount='1'
