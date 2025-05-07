@@ -24,7 +24,6 @@ FEEDS_CONF="feeds.conf.default"
 GOLANG_REPO="https://github.com/sbwml/packages_lang_golang"
 GOLANG_BRANCH="24.x"
 THEME_SET="argon"
-LAN_ADDR="192.168.9.1"
 
 clone_repo() {
     if [[ ! -d "$BUILD_DIR" ]]; then
@@ -83,7 +82,7 @@ update_feeds() {
 
     # 更新 feeds
     # ./scripts/feeds clean
-    ./scripts/feeds update -as   #保留本地修改
+    ./scripts/feeds update -as #保留本地修改.无法保留会贮藏到本地,使用远端的进行编译
 }
 
 remove_unwanted_packages() {
@@ -226,13 +225,6 @@ add_wifi_default_set() {
     fi
     if [ -d "$filogic_uci_dir" ]; then
         install -Dm755 "$BASE_PATH/patches/992_set-wifi-uci.sh" "$filogic_uci_dir/992_set-wifi-uci.sh"
-    fi
-}
-
-update_default_lan_addr() {
-    local CFG_PATH="$BUILD_DIR/package/base-files/files/bin/config_generate"
-    if [ -f "$CFG_PATH" ]; then
-        sed -i 's/192\.168\.[0-9]*\.[0-9]*/'$LAN_ADDR'/g' "$CFG_PATH"
     fi
 }
 
@@ -397,42 +389,6 @@ EOF
     chmod +x "$sh_dir/custom_task"
 }
 
-update_pw() {
-    local pw_share_dir="$BUILD_DIR/feeds/small8/luci-app-passwall/root/usr/share/passwall"
-    local smartdns_lua_path="$pw_share_dir/helper_smartdns_add.lua"
-    local rules_dir="$pw_share_dir/rules"
-
-    # 清空chnlist
-    [ -f "$rules_dir/chnlist" ] && echo "" >"$rules_dir/chnlist"
-}
-
-install_opkg_distfeeds() {
-    local emortal_def_dir="$BUILD_DIR/package/emortal/default-settings"
-    local distfeeds_conf="$emortal_def_dir/files/99-distfeeds.conf"
-    
-    # 强制删除之前的文件,重新使用新的配置文件
-    rm -rf "$distfeeds_conf"
-
-    if [ ! -f "$distfeeds_conf" ]; then
-        mkdir -p "$(dirname "$distfeeds_conf")"
-        cat <<'EOF' > "$distfeeds_conf"
-src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
-src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
-src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
-src/gz immortalwrt_routing https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing
-src/gz immortalwrt_telephony https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony
-EOF
-
-        sed -i "/define Package\/default-settings\/install/a\\
-\\t\$(INSTALL_DIR) \$(1)/etc\\n\
-\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "$emortal_def_dir"/Makefile
-
-        sed -i "/exit 0/i\\
-if [ -f \'/etc/99-distfeeds.conf\' ]; then\n\tmv -f \'/etc/99-distfeeds.conf\' \'/etc/opkg/distfeeds.conf\'\nfi\n\
-sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "$emortal_def_dir"/files/99-default-settings
-    fi
-}
-
 update_nss_pbuf_performance() {
     local pbuf_path="$BUILD_DIR/package/kernel/mac80211/files/pbuf.uci"
     if [ -d "$(dirname "$pbuf_path")" ] && [ -f "$pbuf_path" ]; then
@@ -540,23 +496,8 @@ update_package() {
     fi
 }
 
-# 添加系统升级时的备份信息
-function add_backup_info_to_sysupgrade() {
-    local conf_path="$BUILD_DIR/package/base-files/files/etc/sysupgrade.conf"
-
-    if [ -f "$conf_path" ]; then
-        cat >"$conf_path" <<'EOF'
-/etc/AdGuardHome.yaml
-/etc/easytier
-/etc/zerotier.conf
-/etc/zerotier/
-/etc/lucky/
-EOF
-    fi
-}
-
 # 更新启动顺序
-function update_script_priority() {
+update_script_priority() {
     # 更新qca-nss驱动的启动顺序
     local qca_drv_path="$BUILD_DIR/package/feeds/nss_packages/qca-nss-drv/files/qca-nss-drv.init"
     if [ -d "${qca_drv_path%/*}" ] && [ -f "$qca_drv_path" ]; then
@@ -573,38 +514,6 @@ function update_script_priority() {
     local mosdns_path="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/etc/init.d/mosdns"
     if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
         sed -i 's/START=.*/START=94/g' "$mosdns_path"
-    fi
-}
-
-function optimize_smartDNS() {
-    local smartdns_custom="$BUILD_DIR/feeds/small8/smartdns/conf/custom.conf"
-    local smartdns_patch="$BUILD_DIR/feeds/small8/smartdns/patches/010_change_start_order.patch"
-    install -Dm644 "$BASE_PATH/patches/010_change_start_order.patch" "$smartdns_patch"
-
-    # 检查配置文件所在的目录和文件是否存在
-    if [ -d "${smartdns_custom%/*}" ] && [ -f "$smartdns_custom" ]; then
-        # 优化配置选项：
-        # serve-expired-ttl: 缓存有效期(单位：小时)，默认值影响DNS解析速度
-        # serve-expired-reply-ttl: 过期回复TTL
-        # max-reply-ip-num: 最大IP数
-        # dualstack-ip-selection-threshold: IPv6优先的阈值
-        # server: 配置上游DNS
-        echo "优化SmartDNS配置"
-        cat >"$smartdns_custom" <<'EOF'
-serve-expired-ttl 7200
-serve-expired-reply-ttl 5
-max-reply-ip-num 3
-dualstack-ip-selection-threshold 15
-server 223.5.5.5 -bootstrap-dns
-EOF
-    fi
-}
-
-update_mosdns_deconfig() {
-    local mosdns_conf="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/etc/config/mosdns"
-    if [ -d "${mosdns_conf%/*}" ] && [ -f "$mosdns_conf" ]; then
-        sed -i 's/8000/300/g' "$mosdns_conf"
-        sed -i 's/5335/5336/g' "$mosdns_conf"
     fi
 }
 
@@ -679,88 +588,13 @@ add_gecoosac() {
     git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
 }
 
-update_proxy_app_menu_location() {
-    # passwall
-    local passwall_path="$BUILD_DIR/feeds/small8/luci-app-passwall/luasrc/controller/passwall.lua"
-    if [ -d "${passwall_path%/*}" ] && [ -f "$passwall_path" ]; then
-        local pos=$(grep -n "entry" "$passwall_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n "$pos" ]; then
-            sed -i ''${pos}'i\	entry({"admin", "proxy"}, firstchild(), "Proxy", 30).dependent = false' "$passwall_path"
-            sed -i 's/"services"/"proxy"/g' "$passwall_path"
-        fi
-    fi
-
-    # homeproxy
-    local homeproxy_path="$BUILD_DIR/feeds/small8/luci-app-homeproxy/root/usr/share/luci/menu.d/luci-app-homeproxy.json"
-    if [ -d "${homeproxy_path%/*}" ] && [ -f "$homeproxy_path" ]; then
-        sed -i 's/\/services\//\/proxy\//g' "$homeproxy_path"
-    fi
-
-    # nikki
-    local nikki_path="$BUILD_DIR/feeds/small8/luci-app-nikki/root/usr/share/luci/menu.d/luci-app-nikki.json"
-    if [ -d "${nikki_path%/*}" ] && [ -f "$nikki_path" ]; then
-        sed -i 's/\/services\//\/proxy\//g' "$nikki_path"
-    fi
-}
-
-update_dns_app_menu_location() {
-    # smartdns
-    local smartdns_path="$BUILD_DIR/feeds/small8/luci-app-smartdns/luasrc/controller/smartdns.lua"
-    if [ -d "${smartdns_path%/*}" ] && [ -f "$smartdns_path" ]; then
-        local pos=$(grep -n "entry" "$smartdns_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n "$pos" ]; then
-            sed -i ''${pos}'i\	entry({"admin", "dns"}, firstchild(), "DNS", 29).dependent = false' "$smartdns_path"
-            sed -i 's/"services"/"dns"/g' "$smartdns_path"
-        fi
-    fi
-
-    # mosdns
-    local mosdns_path="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/usr/share/luci/menu.d/luci-app-mosdns.json"
-    if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
-        sed -i 's/\/services\//\/dns\//g' "$mosdns_path"
-    fi
-
-    # AdGuardHome
-    local adg_path="$BUILD_DIR/feeds/small8/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua"
-    if [ -d "${adg_path%/*}" ] && [ -f "$adg_path" ]; then
-        sed -i 's/"services"/"dns"/g' "$adg_path"
-    fi
-}
-
-fix_easytier() {
-    local easytier_path="$BUILD_DIR/feeds/small8/luci-app-easytier/luasrc/model/cbi/easytier.lua"
-    if [ -d "${easytier_path%/*}" ] && [ -f "$easytier_path" ]; then
-        sed -i 's/util/xml/g' "$easytier_path"
-    fi
-}
-
-#修复zerotier无法启动的问题.需要设置zerotier的配置文件为/etc/zerotier.conf
-fix_zerotier() {
-    local conf_path="$BUILD_DIR/package/base-files/files/etc/zerotier.conf"
-    if [ ! -f "$conf_path" ]; then
-        echo '{"settings":{"portMappingEnabled":false}}' > "$conf_path"
-    fi
-    #创建文件夹
-    local zerotier_path="$BUILD_DIR/package/base-files/files/etc/zerotier"
-    if [ ! -d "$zerotier_path" ]; then
-        mkdir -p "$zerotier_path"
-    fi
-}
-
 fix_wolplus() {
     local wolplus_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/luasrc/controller/wolplus.lua"
     if [ -d "$(dirname "$wolplus_path")" ] && [ -f "$wolplus_path" ]; then
         sed -i 's/_("Wake on LAN"),/_("Wake on LAN +"),/g' "$wolplus_path"
-        
+
         local wolplus_po_path="$BUILD_DIR/feeds/small8/luci-app-wolplus/po/zh_Hans/wolplus.po"
         install -Dm664 "$BASE_PATH/patches/wolplus/wolplus.po" "$wolplus_po_path"
-    fi
-}
-
-disable_quickstart() {
-    local quickstart_path="$BUILD_DIR/feeds/small8/luci-app-quickstart/postinst"
-     if [ -d "$(dirname "$quickstart_path")" ]; then
-        install -Dm664 "$BASE_PATH/patches/quickstart/postinst" "$quickstart_path"
     fi
 }
 
@@ -797,7 +631,6 @@ main() {
     change_dnsmasq2full
     fix_mk_def_depends
     add_wifi_default_set
-    update_default_lan_addr
     remove_something_nss_kmod
     update_affinity_script
     fix_build_for_openssl
@@ -807,33 +640,23 @@ main() {
     update_tcping
     # add_ax6600_led
     set_custom_task
-    # update_pw
-    install_opkg_distfeeds
     update_nss_pbuf_performance
     set_build_signature
     fix_compile_vlmcsd
     update_nss_diag
     update_menu
     fix_compile_coremark
-    # update_dnsmasq_conf
-    add_backup_info_to_sysupgrade
-    # optimize_smartDNS
-    # update_mosdns_deconfig
     fix_quickstart
     update_oaf_deconfig
     add_timecontrol
     add_gecoosac
     fix_adguardhome
-    fix_easytier
-    fix_zerotier
     fix_wolplus
-    disable_quickstart
+    # update_dnsmasq_conf
     update_script_priority
-    update_geoip
+    # update_geoip
     update_package "xray-core"
-    install_feeds    
-    # update_proxy_app_menu_location
-    # update_dns_app_menu_location
+    install_feeds
 }
 
 main "$@"

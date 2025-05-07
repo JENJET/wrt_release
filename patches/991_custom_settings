@@ -1,71 +1,156 @@
 #!/bin/sh
 
-# 设置默认语言为中文
-uci set luci.main.lang='zh_cn'
-uci commit luci
+# 设置时区为+8
+fix_timezone() {
+    uci set system.@system[0].timezone='CST-8'
+    uci commit system
+    if [ f '/usr/share/zoneinfo/Asia/Shanghai' ]; then
+        ln -sf '/usr/share/zoneinfo/Asia/Shanghai' '/etc/localtime'
+    fi
+}
+
+# 自定义root密码
+fix_password() {
+    local root_password_plain="password"
+    if [ -n "$root_password_plain" ]; then
+        echo "root:"$root_password_plain"" | chpasswd
+    fi
+}
 
 # 检查当前nf_conntrack_max值是否小于65536，若更小则修改
-current_value=$(sysctl -n net.netfilter.nf_conntrack_max)
-if [ "$current_value" -lt 65535 ]; then
-    # 从sysctl.conf删除旧的nf_conntrack_max配置以避免重复
-    sed -i '/nf_conntrack_max/d' /etc/sysctl.conf
-    # 写入新配置，设置最大连接数为65535
-    echo "net.netfilter.nf_conntrack_max = 65535" >>/etc/sysctl.conf
-    # 应用配置并立即生效
-    sysctl -p
-fi
-
-# 删除前缀
-uci del network.globals.ula_prefix
-uci commit network
-
-# # 自动挂载未专门配置挂载点的分区
-# uci set fstab.cfg013fd6.anon_mount='1'
-# uci commit fstab
+fix_max_connected_count() {
+    local current_value=$(sysctl -n net.netfilter.nf_conntrack_max)
+    if [ "$current_value" -lt 65535 ]; then
+        # 从sysctl.conf删除旧的nf_conntrack_max配置以避免重复
+        sed -i '/nf_conntrack_max/d' /etc/sysctl.conf
+        # 写入新配置，设置最大连接数为65535
+        echo "net.netfilter.nf_conntrack_max = 65535" >>/etc/sysctl.conf
+        # 应用配置并立即生效
+        sysctl -p
+    fi
+}
 
 # 解除dropbear访问限制
-if uci show dropbear | grep -q "DirectInterface"; then
-    uci delete dropbear.main.DirectInterface
-    uci commit dropbear
-    /etc/init.d/dropbear restart
-fi
+fix_dropbear() {
+    if uci show dropbear | grep -q "DirectInterface"; then
+        uci delete dropbear.main.DirectInterface
+        uci commit dropbear
+        /etc/init.d/dropbear restart
+    fi
+}
 
 # 停用quickstart
-quickstart="/etc/init.d/quickstart"
-if [ -f "$quickstart" ]; then
-    "$quickstart" disable
-    "$quickstart" stop
-fi
+stop_quickstart() {
+    local quickstart="/etc/init.d/quickstart"
+    if [ -f "$quickstart" ]; then
+        "$quickstart" disable
+        "$quickstart" stop
+    fi
+}
 
 # 如果沒有 /etc/easytier/et_machine_id 则生成一个,防止使用web方式时提示, Failed to create network, error: {“message”:”Token mismatch”}
-local et_machine_id_path="/etc/easytier/et_machine_id"
-if [ ! -f "$et_machine_id_path" ] || [ ! -s "$et_machine_id_path" ]; then
-    mkdir -p "$(dirname "$et_machine_id_path")"
-    
-    mac_address=""
-    # 扩展接口列表（兼容VLAN和无线设备）
-    for iface in br-lan lan1 eth0 eth1 eth0.1 eth0.2 wan wlan0 wlan1; do
-        if [ -f "/sys/class/net/$iface/address" ]; then
-            mac_address=$(cat "/sys/class/net/$iface/address" | tr -d ':' 2>/dev/null)
-            if [ -n "$mac_address" ]; then
-                break
-            fi
-        fi
-    done
-
-    # MAC地址回退生成逻辑
-    if [ -z "$mac_address" ]; then
-        echo "Warning: No valid MAC found. Generating fallback UDID." >&2
-        # 兼容OpenSSL和纯Shell环境
-        if command -v openssl >/dev/null 2>&1; then
-            mac_address=$(openssl rand -hex 16 | cut -c1-32)
-        else
-            mac_address=$(head -c 32 /dev/urandom | md5sum | tr -dc 'a-f0-9' | cut -c1-32)
-        fi
+fix_easytier() {
+    #修改控制台报错
+    local easytier_path="/usr/lib/lua/luci/model/cbi/easytier.lua"
+    if [ -f "$easytier_path" ]; then
+        sed -i 's/util/xml/g' "$easytier_path"
     fi
 
-    # 生成UDID并写入文件
-    udid=$(echo -n "$mac_address" | md5sum | awk '{print $1}')
-    echo "$udid" > "$et_machine_id_path"
-    chmod 644 "$et_machine_id_path"
-fi
+    local et_machine_id_path="/etc/easytier/et_machine_id"
+    if [ ! -f "$et_machine_id_path" ] || [ ! -s "$et_machine_id_path" ]; then
+        mkdir -p "$(dirname "$et_machine_id_path")"
+
+        mac_address=""
+        # 扩展接口列表（兼容VLAN和无线设备）
+        for iface in br-lan lan1 eth0 eth1 eth0.1 eth0.2 wan wlan0 wlan1; do
+            if [ -f "/sys/class/net/$iface/address" ]; then
+                mac_address=$(cat "/sys/class/net/$iface/address" | tr -d ':' 2>/dev/null)
+                if [ -n "$mac_address" ]; then
+                    break
+                fi
+            fi
+        done
+
+        # MAC地址回退生成逻辑
+        if [ -z "$mac_address" ]; then
+            echo "Warning: No valid MAC found. Generating fallback UDID." >&2
+            # 兼容OpenSSL和纯Shell环境
+            if command -v openssl >/dev/null 2>&1; then
+                mac_address=$(openssl rand -hex 16 | cut -c1-32)
+            else
+                mac_address=$(head -c 32 /dev/urandom | md5sum | tr -dc 'a-f0-9' | cut -c1-32)
+            fi
+        fi
+
+        # 生成UDID并写入文件
+        udid=$(echo -n "$mac_address" | md5sum | awk '{print $1}')
+        echo "$udid" >"$et_machine_id_path"
+        chmod 644 "$et_machine_id_path"
+    fi
+}
+
+# 修改默认软件源
+fix_feeds_conf() {
+    local distfeeds_conf="/etc/99-distfeeds.conf"
+    if [ ! -f "$distfeeds_conf" ]; then
+        mkdir -p "$(dirname "$distfeeds_conf")"
+        cat <<'EOF' >"$distfeeds_conf"
+src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
+src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
+src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
+src/gz immortalwrt_routing https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing
+src/gz immortalwrt_telephony https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony
+EOF
+    fi
+
+    if [ -f "$distfeeds_conf" ]; then
+        mkdir -p '/etc/opkg'
+        mv -f "$distfeeds_conf" '/etc/opkg/distfeeds.conf'
+    fi
+    sed -ri '/check_signature/s@^[^#]@#&@' '/etc/opkg.conf'
+}
+
+#修复zerotier无法启动的问题.需要设置zerotier的配置文件为/etc/zerotier.conf
+fix_zerotier() {
+    local conf_path="/etc/zerotier.conf"
+    if [ ! -f "$conf_path" ]; then
+        echo '{"settings":{"portMappingEnabled":false}}' >"$conf_path"
+    fi
+    #创建文件夹
+    local zerotier_path="etc/zerotier"
+    if [ ! -d "$zerotier_path" ]; then
+        mkdir -p "$zerotier_path"
+    fi
+}
+
+# 添加系统升级时的备份信息
+add_backup_info_to_sysupgrade() {
+    local conf_path="/etc/sysupgrade.conf"
+    if [ -f "$conf_path" ]; then
+        cat >"$conf_path" <<'EOF'
+/etc/AdGuardHome.yaml
+/etc/easytier
+/etc/zerotier.conf
+/etc/zerotier/
+/etc/lucky/
+EOF
+    fi
+}
+
+fix_all() {
+    # 设置默认语言为中文
+    uci set luci.main.lang='zh_cn'
+    uci commit luci
+
+    fix_password
+    fix_timezone
+    fix_max_connected_count
+    fix_dropbear
+    stop_quickstart
+    fix_feeds_conf
+    fix_easytier
+    fix_zerotier
+    add_backup_info_to_sysupgrade
+}
+
+fix_all
