@@ -1,5 +1,26 @@
 #!/bin/sh
 
+# 更新启动顺序
+update_script_priority() {
+    # 更新qca-nss驱动的启动顺序
+    local qca_drv_path="/etc/init.d/qca-nss-drv"
+    if [ -d "${qca_drv_path%/*}" ] && [ -f "$qca_drv_path" ]; then
+        sed -i 's/START=.*/START=88/g' "$qca_drv_path"
+    fi
+
+    # 更新pbuf服务的启动顺序
+    local pbuf_path="/etc/init.d/qca-nss-pbuf"
+    if [ -d "${pbuf_path%/*}" ] && [ -f "$pbuf_path" ]; then
+        sed -i 's/START=.*/START=89/g' "$pbuf_path"
+    fi
+
+    # 更新mosdns服务的启动顺序
+    local mosdns_path="/etc/init.d/mosdns"
+    if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
+        sed -i 's/START=.*/START=94/g' "$mosdns_path"
+    fi
+}
+
 # 设置时区为+8
 fix_timezone() {
     uci set system.@system[0].timezone='CST-8'
@@ -137,13 +158,47 @@ EOF
     fi
 }
 
-fix_all() {
-    # 设置默认语言为中文
-    uci set luci.main.lang='zh_cn'
-    uci commit luci
+update_menu() {
+    local samba4_path="/usr/share/luci/menu.d/luci-app-samba4.json"
+    if [ -d "$(dirname "$samba4_path")" ] && [ -f "$samba4_path" ]; then
+        sed -i 's/nas/services/g' "$samba4_path"
+    fi
 
+    local tailscale_path="/usr/share/luci/menu.d/luci-app-tailscale.json"
+    if [ -d "$(dirname "$tailscale_path")" ] && [ -f "$tailscale_path" ]; then
+        sed -i 's/services/vpn/g' "$tailscale_path"
+    fi
+
+    local netspeedtest_path="/usr/lib/lua/luci/controller/netspeedtest.lua"
+    if [ -d "$(dirname "$netspeedtest_path")" ] && [ -f "$netspeedtest_path" ]; then
+        sed -i 's/_("Net Speedtest"),90)/_("Net Speedtest"),50)/g' "$netspeedtest_path"
+    fi
+}
+
+fix_all() {
+    #调整启动顺序,防止无限重启
+    update_script_priority
+
+    # 设置ipv6的RA 服务,DHCPv6 服务为混合模式
+    uci del dhcp.lan.ra_slaac
+    uci set dhcp.lan.ra='hybrid'
+    uci set dhcp.lan.dhcpv6='hybrid'
+    uci commit dhcp
+
+    # # 设置lan接口
+    uci set network.lan.ipaddr='192.168.9.1'
+    # 删除前缀
+    uci del network.globals.ula_prefix
+    # 设置wan接口
+    uci set network.wan.proto='static'
+    uci set network.wan.ipaddr='192.168.1.2'
+    uci set network.wan.netmask='255.255.255.0'
+    uci set network.wan.gateway='192.168.1.1'
+    uci add_list network.wan.dns='192.168.1.1'
+    uci commit network
+
+    update_menu
     fix_password
-    fix_timezone
     fix_max_connected_count
     fix_dropbear
     stop_quickstart
@@ -151,6 +206,16 @@ fix_all() {
     fix_easytier
     fix_zerotier
     add_backup_info_to_sysupgrade
+
+    # 设置默认语言为中文,golang程序的时间获取有一些关系.不设置的话可能显示为utc时间
+    uci set luci.main.lang='zh_cn'
+    uci commit luci
+
+    # 设置主机名
+    uci set system.@system[0].hostname='JDC-AX18PRO'
+    uci commit system
+
+    fix_timezone
 }
 
 fix_all

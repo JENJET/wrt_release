@@ -81,8 +81,8 @@ update_feeds() {
     #fi
 
     # 更新 feeds
-    # ./scripts/feeds clean
-    ./scripts/feeds update -as #保留本地修改.无法保留会贮藏到本地,使用远端的进行编译
+    ./scripts/feeds clean
+    ./scripts/feeds update -a
 }
 
 remove_unwanted_packages() {
@@ -100,7 +100,7 @@ remove_unwanted_packages() {
         "shadowsocksr-libev" "dae" "daed" "mihomo" "geoview" "tailscale" "open-app-filter"
     )
     local small8_packages=(
-        "ppp" "firewall" "dae" "daed" "daed-next" "libnftnl" "nftables" "dnsmasq"
+        "ppp" "firewall" "dae" "daed" "daed-next" "libnftnl" "nftables" "dnsmasq" "luci-app-gecoosac"
     )
 
     for pkg in "${luci_packages[@]}"; do
@@ -131,6 +131,7 @@ remove_unwanted_packages() {
     fi
 }
 
+# 使用golang新版本,否则可能出现编译报错
 update_golang() {
     local golang_path="./feeds/packages/lang/golang"
     if [[ -d "$golang_path" ]]; then
@@ -317,17 +318,6 @@ fix_mkpkg_format_invalid() {
     fi
 }
 
-add_ax6600_led() {
-    local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
-    # 删除旧的目录（如果存在）
-    rm -rf "$athena_led_dir" 2>/dev/null
-    # 克隆最新的仓库
-    git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
-    # 设置执行权限
-    chmod +x "$athena_led_dir/root/usr/sbin/athena-led"
-    chmod +x "$athena_led_dir/root/etc/init.d/athena_led"
-}
-
 chanage_cpuusage() {
     local luci_dir="$BUILD_DIR/feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci"
     local imm_script1="$BUILD_DIR/package/base-files/files/sbin/cpuusage"
@@ -423,23 +413,6 @@ update_nss_diag() {
     fi
 }
 
-update_menu() {
-    local samba4_path="$BUILD_DIR/feeds/luci/applications/luci-app-samba4/root/usr/share/luci/menu.d/luci-app-samba4.json"
-    if [ -d "$(dirname "$samba4_path")" ] && [ -f "$samba4_path" ]; then
-        sed -i 's/nas/services/g' "$samba4_path"
-    fi
-
-    local tailscale_path="$BUILD_DIR/feeds/small8/luci-app-tailscale/root/usr/share/luci/menu.d/luci-app-tailscale.json"
-    if [ -d "$(dirname "$tailscale_path")" ] && [ -f "$tailscale_path" ]; then
-        sed -i 's/services/vpn/g' "$tailscale_path"
-    fi
-
-    local netspeedtest_path="$BUILD_DIR/feeds/small8/luci-app-netspeedtest/luasrc/controller/netspeedtest.lua"
-    if [ -d "$(dirname "$netspeedtest_path")" ] && [ -f "$netspeedtest_path" ]; then
-        sed -i 's/_("Net Speedtest"),90)/_("Net Speedtest"),50)/g' "$netspeedtest_path"
-    fi
-}
-
 fix_compile_coremark() {
     local file="$BUILD_DIR/feeds/packages/utils/coremark/Makefile"
     if [ -d "$(dirname "$file")" ] && [ -f "$file" ]; then
@@ -447,9 +420,10 @@ fix_compile_coremark() {
     fi
 }
 
+# 此版本是最新版本,small8的luci-app-homeproxy已经是同步的该仓库
 update_homeproxy() {
     local repo_url="https://github.com/immortalwrt/homeproxy.git"
-    local target_dir="$BUILD_DIR/feeds/small8/luci-app-homeproxy"
+    local target_dir="$BUILD_DIR/package/luci-app-homeproxy"
     # 删除旧的目录（如果存在）
     rm -rf "$target_dir" 2>/dev/null
     git clone --depth 1 "$repo_url" "$target_dir"
@@ -493,27 +467,6 @@ update_package() {
         sed -i 's/^PKG_HASH:=.*/PKG_HASH:='$PKG_HASH'/g' "$mk_path"
 
         echo "Update Package "$1" to "$PKG_VER" "$PKG_HASH""
-    fi
-}
-
-# 更新启动顺序
-update_script_priority() {
-    # 更新qca-nss驱动的启动顺序
-    local qca_drv_path="$BUILD_DIR/package/feeds/nss_packages/qca-nss-drv/files/qca-nss-drv.init"
-    if [ -d "${qca_drv_path%/*}" ] && [ -f "$qca_drv_path" ]; then
-        sed -i 's/START=.*/START=88/g' "$qca_drv_path"
-    fi
-
-    # 更新pbuf服务的启动顺序
-    local pbuf_path="$BUILD_DIR/package/kernel/mac80211/files/qca-nss-pbuf.init"
-    if [ -d "${pbuf_path%/*}" ] && [ -f "$pbuf_path" ]; then
-        sed -i 's/START=.*/START=89/g' "$pbuf_path"
-    fi
-
-    # 更新mosdns服务的启动顺序
-    local mosdns_path="$BUILD_DIR/feeds/small8/luci-app-mosdns/root/etc/init.d/mosdns"
-    if [ -d "${mosdns_path%/*}" ] && [ -f "$mosdns_path" ]; then
-        sed -i 's/START=.*/START=94/g' "$mosdns_path"
     fi
 }
 
@@ -581,11 +534,23 @@ add_timecontrol() {
     git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
 }
 
+# small8/luci-app-gecoosac的集客不是最新版本
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
     # 删除旧的目录（如果存在）
     rm -rf "$gecoosac_dir" 2>/dev/null
     git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+}
+
+add_ax6600_led() {
+    local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
+    # 删除旧的目录（如果存在）
+    rm -rf "$athena_led_dir" 2>/dev/null
+    # 克隆最新的仓库
+    git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+    # 设置执行权限
+    chmod +x "$athena_led_dir/root/usr/sbin/athena-led"
+    chmod +x "$athena_led_dir/root/etc/init.d/athena_led"
 }
 
 fix_wolplus() {
@@ -622,12 +587,15 @@ main() {
     clone_repo
     clean_up
     reset_feeds_conf
+    add_timecontrol
+    add_gecoosac
+    update_golang
     update_feeds
     remove_unwanted_packages
-    update_homeproxy
+    add_ax6600_led
+    # update_homeproxy
     fix_default_set
     fix_miniupnpd
-    update_golang
     change_dnsmasq2full
     fix_mk_def_depends
     add_wifi_default_set
@@ -638,22 +606,17 @@ main() {
     # fix_mkpkg_format_invalid
     chanage_cpuusage
     update_tcping
-    # add_ax6600_led
     set_custom_task
     update_nss_pbuf_performance
     set_build_signature
     fix_compile_vlmcsd
     update_nss_diag
-    update_menu
     fix_compile_coremark
     fix_quickstart
     update_oaf_deconfig
-    add_timecontrol
-    add_gecoosac
     fix_adguardhome
     fix_wolplus
     # update_dnsmasq_conf
-    update_script_priority
     # update_geoip
     update_package "xray-core"
     install_feeds
