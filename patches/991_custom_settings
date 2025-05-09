@@ -21,10 +21,17 @@ update_script_priority() {
     fi
 }
 
-# 设置时区为+8
-fix_timezone() {
+# 设置系统信息
+fix_system_info() {
+    # 设置默认语言为中文
+    uci set luci.main.lang='zh_cn'
+    uci commit luci
+    # 设置时区为+8
     uci set system.@system[0].timezone='CST-8'
+    # 设置主机名
+    uci set system.@system[0].hostname='JDC-AX18PRO'
     uci commit system
+    # 创建localtime的软链接,指向Asia/Shanghai,golang程序的时间获取有一些关系.不设置的话默认可能显示为utc时间
     if [ f '/usr/share/zoneinfo/Asia/Shanghai' ]; then
         ln -sf '/usr/share/zoneinfo/Asia/Shanghai' '/etc/localtime'
     fi
@@ -40,15 +47,20 @@ fix_password() {
 
 # 检查当前nf_conntrack_max值是否小于65536，若更小则修改
 fix_max_connected_count() {
+    local conf_path="/etc/sysctl.conf"
     local current_value=$(sysctl -n net.netfilter.nf_conntrack_max)
     if [ "$current_value" -lt 65535 ]; then
-        # 从sysctl.conf删除旧的nf_conntrack_max配置以避免重复
-        sed -i '/nf_conntrack_max/d' /etc/sysctl.conf
+        # 从sysctl.conf删除旧的配置以避免重复
+        sed -i '/nf_conntrack_max/d' "$conf_path"
         # 写入新配置，设置最大连接数为65535
-        echo "net.netfilter.nf_conntrack_max = 65535" >>/etc/sysctl.conf
-        # 应用配置并立即生效
-        sysctl -p
+        echo "net.netfilter.nf_conntrack_max = 65535" >> "$conf_path"
     fi
+    # 删除旧的配置以避免重复
+    sed -i '/net.ipv4.ip_forward/d' "$conf_path"
+    # 开启端口转发,一些软件需要这个功能比如zerotier等
+    echo "net.ipv4.ip_forward = 1" >> "$conf_path"
+    # 应用配置并立即生效
+    sysctl -p
 }
 
 # 解除dropbear访问限制
@@ -128,19 +140,28 @@ EOF
         mkdir -p '/etc/opkg'
         mv -f "$distfeeds_conf" '/etc/opkg/distfeeds.conf'
     fi
-    sed -ri '/check_signature/s@^[^#]@#&@' '/etc/opkg.conf'
+    local opkg_conf="/etc/opkg.conf"
+    sed -i '/check_signature/d' "$opkg_conf"
+    cat <<'EOF' >>"$opkg_conf"
+#option check_signature
+EOF
 }
 
 #修复zerotier无法启动的问题.需要设置zerotier的配置文件为/etc/zerotier.conf
 fix_zerotier() {
-    local conf_path="/etc/zerotier.conf"
+    # 创建文件夹
+    local zerotier_path="/etc/zerotier"
+    if [ ! -d "$zerotier_path" ]; then
+        mkdir -p "$zerotier_path"
+    fi
+    local conf_path=""$zerotier_path"/local.conf"
     if [ ! -f "$conf_path" ]; then
         echo '{"settings":{"portMappingEnabled":false}}' >"$conf_path"
     fi
-    #创建文件夹
-    local zerotier_path="etc/zerotier"
-    if [ ! -d "$zerotier_path" ]; then
-        mkdir -p "$zerotier_path"
+    # 设置zerotier配置文件路径
+    if [ ! -f "/etc/init.d/zerotier" ]; then
+        uci set zerotier.global.config_path="$zerotier_path"
+        uci commit zerotier
     fi
 }
 
@@ -176,7 +197,7 @@ update_menu() {
 }
 
 fix_all() {
-    #调整启动顺序,防止无限重启
+    # 调整启动顺序,防止无限重启
     update_script_priority
 
     # 设置ipv6的RA 服务,DHCPv6 服务为混合模式
@@ -185,7 +206,7 @@ fix_all() {
     uci set dhcp.lan.dhcpv6='hybrid'
     uci commit dhcp
 
-    # # 设置lan接口
+    # 设置lan接口
     uci set network.lan.ipaddr='192.168.9.1'
     # 删除前缀
     uci del network.globals.ula_prefix
@@ -206,16 +227,7 @@ fix_all() {
     fix_easytier
     fix_zerotier
     add_backup_info_to_sysupgrade
-
-    # 设置默认语言为中文,golang程序的时间获取有一些关系.不设置的话可能显示为utc时间
-    uci set luci.main.lang='zh_cn'
-    uci commit luci
-
-    # 设置主机名
-    uci set system.@system[0].hostname='JDC-AX18PRO'
-    uci commit system
-
-    fix_timezone
+    fix_system_info
 }
 
 fix_all
