@@ -32,7 +32,7 @@ fix_system_info() {
     uci set system.@system[0].hostname='JDC-AX18PRO'
     uci commit system
     # 创建localtime的软链接,指向Asia/Shanghai,golang程序的时间获取有一些关系.不设置的话默认可能显示为utc时间
-    if [ f '/usr/share/zoneinfo/Asia/Shanghai' ]; then
+    if [ -f '/usr/share/zoneinfo/Asia/Shanghai' ]; then
         ln -sf '/usr/share/zoneinfo/Asia/Shanghai' '/etc/localtime'
     fi
 }
@@ -45,7 +45,7 @@ fix_password() {
     fi
 }
 
-# 检查当前nf_conntrack_max值是否小于65536，若更小则修改
+# 检查当前nf_conntrack_max值是否小于65535，若更小则修改
 fix_max_connected_count() {
     local conf_path="/etc/sysctl.conf"
     local current_value=$(sysctl -n net.netfilter.nf_conntrack_max)

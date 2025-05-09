@@ -16,8 +16,14 @@ configure_wifi() {
 
     local mobility_domain="4f56"
     # 根据 htmode 设置 mobility_domain
-    if [ "$htmode" = "HE80" ] || [ "$htmode" = "HE160" ]; then
+    if echo "$htmode" | grep -q '80\|160'; then
         mobility_domain="4f59"
+    fi
+    
+    if [ "$txpower" == "0" ]; then
+      uci del wireless.radio${radio}.txpower
+    else
+      uci set wireless.radio${radio}.txpower="${txpower}"
     fi
 
     uci -q batch <<EOF
@@ -25,7 +31,6 @@ set wireless.radio${radio}.channel="${channel}"
 set wireless.radio${radio}.htmode="${htmode}"
 set wireless.radio${radio}.mu_beamformer='1'
 set wireless.radio${radio}.country='CN'
-set wireless.radio${radio}.txpower="${txpower}"
 set wireless.radio${radio}.cell_density='0'
 set wireless.radio${radio}.disabled='0'
 set wireless.default_radio${radio}.ssid="${ssid}"
