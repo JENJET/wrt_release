@@ -86,6 +86,7 @@ update_feeds() {
 }
 
 remove_unwanted_packages() {
+    echo "===删除一些冲突的软件包==="
     local luci_packages=(
         "luci-app-passwall" "luci-app-smartdns" "luci-app-ddns-go" "luci-app-rclone"
         "luci-app-ssr-plus" "luci-app-vssr" "luci-app-daed" "luci-app-dae"
@@ -125,6 +126,10 @@ remove_unwanted_packages() {
         rm -rf "$BUILD_DIR/feeds/nss_packages/wwan"
     fi
 
+    # 删除自带的led控制,使用自定义的athena-led
+    local org_athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
+    rm -rf "$org_athena_led_dir" 2>/dev/null
+
     # 临时放一下，清理脚本
     if [ -d "$BUILD_DIR/target/linux/qualcommax/base-files/etc/uci-defaults" ]; then
         find "$BUILD_DIR/target/linux/qualcommax/base-files/etc/uci-defaults/" -type f -name "99*.sh" -exec rm -f {} +
@@ -132,12 +137,23 @@ remove_unwanted_packages() {
 }
 
 # 使用golang新版本,否则可能出现编译报错
-update_golang() {
+replace_golang() {
     local golang_path="./feeds/packages/lang/golang"
-    if [[ -d "$golang_path" ]]; then
-        \rm -rf "$golang_path"
+    rm -rf "$golang_path"
+    echo "删除原始"$golang_path"包"
+    local new_golang_path="./golang"
+    if [[ -d "$new_golang_path" ]]; then
+        echo "===替换包===进入 $new_golang_path 目录
+执行 git reset --hard && git clean -f -d && git pull"
+        cd "$new_golang_path"
+        git reset --hard && git clean -f -d
+        git pull
+        cd -
+    else
+        echo "===替换包===git clone --depth "$GOLANG_REPO", branch: "$GOLANG_BRANCH""
+        git clone --depth 1 "$GOLANG_REPO" -b "$GOLANG_BRANCH" "$new_golang_path"
     fi
-    git clone --depth 1 "$GOLANG_REPO" -b "$GOLANG_BRANCH" "$golang_path"
+    cp -rf "$new_golang_path" "$golang_path"
 }
 
 install_small8() {
@@ -420,15 +436,6 @@ fix_compile_coremark() {
     fi
 }
 
-# 此版本是最新版本,small8的luci-app-homeproxy已经是同步的该仓库
-update_homeproxy() {
-    local repo_url="https://github.com/immortalwrt/homeproxy.git"
-    local target_dir="$BUILD_DIR/package/luci-app-homeproxy"
-    # 删除旧的目录（如果存在）
-    rm -rf "$target_dir" 2>/dev/null
-    git clone --depth 1 "$repo_url" "$target_dir"
-}
-
 update_dnsmasq_conf() {
     local file="$BUILD_DIR/package/network/services/dnsmasq/files/dhcp.conf"
     if [ -d "$(dirname "$file")" ] && [ -f "$file" ]; then
@@ -529,25 +536,49 @@ fix_adguardhome() {
 
 add_timecontrol() {
     local timecontrol_dir="$BUILD_DIR/package/luci-app-timecontrol"
-    # 删除旧的目录（如果存在）
-    rm -rf "$timecontrol_dir" 2>/dev/null
-    git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
+    if [[ -d "$timecontrol_dir" ]]; then
+        echo "===自定义包===进入 $timecontrol_dir 目录
+执行 git reset --hard && git clean -f -d && git pull"
+        cd "$timecontrol_dir"
+        git reset --hard && git clean -f -d
+        git pull
+        cd -
+    else
+        git clone --depth 1 https://github.com/sirpdboy/luci-app-timecontrol.git "$timecontrol_dir"
+    fi
 }
 
 # small8/luci-app-gecoosac的集客不是最新版本
 add_gecoosac() {
     local gecoosac_dir="$BUILD_DIR/package/openwrt-gecoosac"
-    # 删除旧的目录（如果存在）
-    rm -rf "$gecoosac_dir" 2>/dev/null
-    git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+    if [[ -d "$gecoosac_dir" ]]; then
+        echo "===自定义包===进入 $gecoosac_dir 目录
+执行 git reset --hard && git clean -f -d && git pull"
+        cd "$gecoosac_dir"
+        git reset --hard && git clean -f -d
+        git pull
+        cd -
+    else
+        git clone --depth 1 https://github.com/lwb1978/openwrt-gecoosac.git "$gecoosac_dir"
+    fi
 }
 
-add_ax6600_led() {
-    local athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
-    # 删除旧的目录（如果存在）
-    rm -rf "$athena_led_dir" 2>/dev/null
-    # 克隆最新的仓库
-    git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+replace_ax6600_led() {
+    local org_athena_led_dir="$BUILD_DIR/package/emortal/luci-app-athena-led"
+    rm -rf "$org_athena_led_dir" 2>/dev/null
+    # 切换到新的目录
+    local athena_led_dir="$BUILD_DIR/package/luci-app-athena-led"
+    if [[ -d "$athena_led_dir" ]]; then
+        echo "===替换包===进入 $athena_led_dir 目录
+执行 git reset --hard && git clean -f -d && git pull"
+        cd "$athena_led_dir"
+        git reset --hard && git clean -f -d
+        git pull
+        cd -
+    else
+        # 克隆最新的仓库
+        git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led.git "$athena_led_dir"
+    fi
     # 设置执行权限
     chmod +x "$athena_led_dir/root/usr/sbin/athena-led"
     chmod +x "$athena_led_dir/root/etc/init.d/athena_led"
@@ -583,17 +614,17 @@ update_geoip() {
     fi
 }
 
+# 添加的库可以放在前面,替换或者删除自带的库,必须要防到update_feeds之后
 main() {
     clone_repo
     clean_up
     reset_feeds_conf
     add_timecontrol
     add_gecoosac
-    update_golang
     update_feeds
     remove_unwanted_packages
-    add_ax6600_led
-    # update_homeproxy
+    replace_golang
+    replace_ax6600_led
     fix_default_set
     fix_miniupnpd
     change_dnsmasq2full
